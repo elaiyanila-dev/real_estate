@@ -4,7 +4,7 @@ import { BarChart3, Building2, CheckCircle2, Clock, LayoutDashboard, ListChecks,
 import { properties } from '../data/properties.js'
 
 const analytics = [
-  { label: 'Total Properties', value: '10,840', change: '+14%', icon: Building2 },
+  { label: 'Total Properties', value: '10,840', change: '+18%', icon: Building2 },
   { label: 'Pending Approval', value: '128', change: '-9%', icon: Clock },
   { label: 'Active Listings', value: '8,926', change: '+22%', icon: CheckCircle2 },
   { label: 'User Analytics', value: '42.7K', change: '+18%', icon: BarChart3 },
