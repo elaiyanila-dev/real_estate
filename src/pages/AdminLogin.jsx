@@ -1,18 +1,27 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext.jsx'
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
+  const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { login } = useAuth()
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault()
-    if (email === 'admin@alayaa.in' && password === 'admin123') navigate('/admin/dashboard')
-    else setError('Demo: admin@alayaa.in / admin123')
+    setError('')
+
+    try {
+      await login({ email, password, role: 'admin', remember })
+      navigate('/admin/dashboard')
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   return (
@@ -43,6 +52,11 @@ export default function AdminLogin() {
                 <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B7280]">{showPass ? <EyeOff size={16} /> : <Eye size={16} />}</button>
               </div>
             </label>
+            <label className="flex items-center gap-2 text-sm font-medium text-[#6B7280]"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} className="accent-[#0F766E]" /> Remember me</label>
+            <div className="flex items-center justify-between text-sm">
+              <Link to="/forgot-password" className="font-bold text-[#0F766E]">Forgot password?</Link>
+              <span className="text-[#6B7280]">Admin</span>
+            </div>
             <button className="btn-primary w-full rounded-2xl py-3 font-bold">Admin Sign In</button>
           </form>
         </div>
