@@ -12,6 +12,7 @@ import BrokerRegister from './BrokerRegister.jsx'
 import ForgotPassword from './ForgotPassword.jsx'
 import ResetPassword from './ResetPassword.jsx'
 import Unauthorized from './Unauthorized.jsx'
+import PropertyDetail from './PropertyDetail.jsx'
 import { AuthProvider } from '../contexts/AuthContext.jsx'
 import ProtectedRoute from '../components/ProtectedRoute.jsx'
 
@@ -21,6 +22,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/property/:id" element={<PropertyDetail />} />
           <Route path="/login" element={<CustomerLogin />} />
           <Route path="/register" element={<CustomerRegister />} />
           <Route path="/broker/login" element={<BrokerLogin />} />
