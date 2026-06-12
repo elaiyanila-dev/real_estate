@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { BadgeCheck, BedDouble, Heart, Map, MapPin, Maximize2, Scale, School, TrainFront, Building2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-
+import { Link } from 'react-router-dom'
 export default function PropertyCard({ property, selected = false, onCompareToggle = () => {} }) {
   const [saved, setSaved] = useState(false)
   const mapsUrl = `https://www.google.com/maps?q=${property.latitude},${property.longitude}`
@@ -55,7 +55,9 @@ export default function PropertyCard({ property, selected = false, onCompareTogg
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <button className="btn-primary rounded-2xl px-4 py-3 text-sm font-bold">View Details</button>
+          <Link to={`/property/${property.id}`} className="btn-primary block rounded-2xl px-4 py-3 text-center text-sm font-bold">
+             View Details
+          </Link>
           <a href={mapsUrl} target="_blank" rel="noreferrer" className="btn-secondary flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold">
             <Map size={16} /> View on Map
           </a>
