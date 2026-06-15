@@ -7,7 +7,10 @@ import brokerRoutes from './routes/broker.js'
 import userRoutes from './routes/user.js'
 
 const app = express()
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }))
+app.use(cors({
+  origin: /^http:\/\/localhost:\d+$/,
+  credentials: true
+}))
 app.use(express.json())
 
 app.use('/api/auth', authRoutes)
