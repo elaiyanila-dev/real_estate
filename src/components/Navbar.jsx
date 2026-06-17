@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronDown, Menu, Search, UserRound, X } from 'lucide-react'
+import { Building2, ChevronDown, Menu, Search, ShieldCheck, UserRound, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { tamilNaduCities } from '../data/properties.js'
 
@@ -15,6 +15,7 @@ const AlayaaLogo = () => (
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const [citiesOpen, setCitiesOpen] = useState(false)
+  const [signInOpen, setSignInOpen] = useState(false)
 
   const linkTarget = (label) => {
     if (label === 'Map View') return '#map'
@@ -72,13 +73,51 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link to="/login" className="btn-secondary flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold">
-            <UserRound size={16} /> Sign in
+  <div className="relative">
+    <button
+      onClick={() => setSignInOpen((v) => !v)}
+      className="btn-secondary flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
+    >
+      <UserRound size={16} /> Sign in
+      <ChevronDown size={14} className={signInOpen ? 'rotate-180 transition' : 'transition'} />
+    </button>
+    <AnimatePresence>
+      {signInOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          className="absolute right-0 mt-3 w-52 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl"
+        >
+          <Link
+            to="/admin/login"
+            onClick={() => setSignInOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#1F2937] hover:bg-[#F0FAF8] hover:text-[#0F766E]"
+          >
+            <ShieldCheck size={17} className="text-[#0F766E]" /> Admin Login
           </Link>
-          <Link to="/broker/login" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
-            Post Property
+          <Link
+            to="/login"
+            onClick={() => setSignInOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#1F2937] hover:bg-[#F0FAF8] hover:text-[#0F766E]"
+          >
+            <UserRound size={17} className="text-[#0F766E]" /> User Login
           </Link>
-        </div>
+          <Link
+            to="/broker/login"
+            onClick={() => setSignInOpen(false)}
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-[#1F2937] hover:bg-[#F0FAF8] hover:text-[#0F766E]"
+          >
+            <Building2 size={17} className="text-[#0F766E]" /> Broker Login
+          </Link>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+  <Link to="/broker/login" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
+    Post Property
+  </Link>
+</div>
 
         <button className="rounded-xl border border-[#E5E7EB] p-2 text-[#1F2937] md:hidden" onClick={() => setOpen((value) => !value)}>
           {open ? <X size={22} /> : <Menu size={22} />}
