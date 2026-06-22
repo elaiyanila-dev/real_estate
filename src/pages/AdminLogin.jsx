@@ -54,7 +54,7 @@ export default function AdminLogin() {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="admin@example.com"
+            placeholder="example.com"
             required
           />
         </Field>

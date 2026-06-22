@@ -88,14 +88,7 @@ async function getCurrentAuthUser() {
 }
 
 async function fetchBrokerApproval(brokerId) {
-  const { data, error } = await supabase
-    .from('broker_approvals')
-    .select('*')
-    .eq('broker_id', brokerId)
-    .maybeSingle()
-
-  if (error) throw error
-  return data || null
+  return  null
 }
 
 async function ensureProfileForAuthUser(authUser) {
@@ -350,9 +343,9 @@ export async function uploadPropertyImages(files, brokerId) {
 
   return uploads
 }
-
 export async function fetchProperties(filters = {}) {
   const options = typeof filters === 'string' ? { query: filters } : filters
+
   const {
     query = '',
     city = '',
@@ -361,34 +354,57 @@ export async function fetchProperties(filters = {}) {
     minPrice,
     maxPrice,
     bedrooms,
-    brokerId,
     limit,
   } = options
 
   let request = supabase
-    .from('properties')
+    .from('properties') // <-- your actual table name
     .select('*')
-    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
 
-  if (status) request = request.eq('status', status)
-  if (city) request = request.eq('city', city)
-  if (propertyType) request = request.eq('property_type', propertyType)
-  if (brokerId) request = request.eq('broker_id', brokerId)
-  if (typeof minPrice === 'number') request = request.gte('price', minPrice)
-  if (typeof maxPrice === 'number') request = request.lte('price', maxPrice)
-  if (typeof bedrooms === 'number') request = request.gte('bedrooms', bedrooms)
-  if (query) {
-    const term = query.replace(/,/g, ' ').trim()
-    if (term) {
-      request = request.or(
-        `title.ilike.%${term}%,description.ilike.%${term}%,location.ilike.%${term}%,city.ilike.%${term}%`,
-      )
-    }
+  if (status) {
+    request = request.eq('status', status)
   }
-  if (limit) request = request.limit(limit)
+
+  if (city) {
+    request = request.eq('city', city)
+  }
+
+  if (propertyType) {
+    request = request.eq('property_type', propertyType)
+  }
+
+  if (typeof minPrice === 'number') {
+    request = request.gte('price_value', minPrice)
+  }
+
+  if (typeof maxPrice === 'number') {
+    request = request.lte('price_value', maxPrice)
+  }
+
+  if (typeof bedrooms === 'number') {
+    request = request.gte('bhk', bedrooms)
+  }
+
+  if (query) {
+    const term = query.trim()
+
+    request = request.or(
+      `title.ilike.%${term}%,location.ilike.%${term}%,locality.ilike.%${term}%,city.ilike.%${term}%`
+    )
+  }
+
+  if (limit) {
+    request = request.limit(limit)
+  }
 
   const { data, error } = await request
-  if (error) throw error
+
+  if (error) {
+    console.error(error)
+    throw error
+  }
+
   return (data || []).map(normalizeProperty)
 }
 

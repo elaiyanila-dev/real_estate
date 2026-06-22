@@ -24,7 +24,9 @@ import {
 } from '../services/api.jsx'
 
 function formatPrice(value) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0))
+  if (!value) return 'On request'
+  if (typeof value === 'string') return value  // already formatted text
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value))
 }
 
 export default function CustomerDashboard() {
@@ -49,12 +51,15 @@ export default function CustomerDashboard() {
       setLoading(true)
       try {
         const [allProperties, favs, userEnquiries] = await Promise.all([
-          fetchProperties({ status: 'active' }),
+          fetchProperties({ status: '' }),
           fetchFavorites(user.id),
           fetchCustomerEnquiries(user.id),
         ])
         if (!active) return
         setProperties(allProperties)
+
+        console.log("All Properties:", allProperties)
+console.log("Properties Count:", allProperties?.length)
         setFavorites(favs)
         setEnquiries(userEnquiries)
       } catch (error) {

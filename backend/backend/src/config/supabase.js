@@ -1,9 +1,10 @@
+import { createClient } from '@supabase/supabase-js';
+import { env } from './env.js';
+
 console.log('SUPABASE_URL:', env.supabaseUrl)
 console.log('SUPABASE_ANON_KEY:', env.supabaseAnonKey?.slice(0, 20))
 console.log('SUPABASE_SERVICE_ROLE_KEY:', env.supabaseServiceRoleKey?.slice(0, 20))
 
-import { createClient } from '@supabase/supabase-js';
-import { env } from './env.js';
 
 const options = {
   auth: {

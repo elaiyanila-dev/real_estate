@@ -30,7 +30,7 @@ export const store = asyncHandler(async (req, res) => {
 
 export const patch = asyncHandler(async (req, res) => {
   const existing = await getPropertyById(req.params.id);
-  const isOwner = existing.owner_id === req.user.id;
+  const isOwner = existing.broker_id === req.user.id;
   if (!isOwner && req.user.role !== ROLES.ADMIN) throw new ApiError(403, 'Only the owner or admin can update this property');
   const property = await updateProperty(req.params.id, req.validated.body);
   sendSuccess(res, property, 'Property updated');
@@ -38,7 +38,7 @@ export const patch = asyncHandler(async (req, res) => {
 
 export const destroy = asyncHandler(async (req, res) => {
   const existing = await getPropertyById(req.params.id);
-  const isOwner = existing.owner_id === req.user.id;
+  const isOwner = existing.broker_id === req.user.id;
   if (!isOwner && req.user.role !== ROLES.ADMIN) throw new ApiError(403, 'Only the owner or admin can delete this property');
   await deleteProperty(req.params.id);
   sendSuccess(res, null, 'Property deleted');

@@ -4,16 +4,16 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const brokerDashboard = asyncHandler(async (req, res) => {
   const [properties, inquiries, visits, leads] = await Promise.all([
-    supabaseAdmin.from('properties').select('*', { count: 'exact', head: true }).eq('owner_id', req.user.id),
-    supabaseAdmin.from('inquiries').select('properties!inner(owner_id)', { count: 'exact', head: true }).eq('properties.owner_id', req.user.id),
-    supabaseAdmin.from('visit_bookings').select('properties!inner(owner_id)', { count: 'exact', head: true }).eq('properties.owner_id', req.user.id),
+    supabaseAdmin.from('properties').select('*', { count: 'exact', head: true }).eq('broker_id', req.user.id),
+    supabaseAdmin.from('inquiries').select('properties!inner(broker_id)', { count: 'exact', head: true }).eq('properties.broker_id', req.user.id),
+    supabaseAdmin.from('visit_bookings').select('properties!inner(broker_id)', { count: 'exact', head: true }).eq('properties.broker_id', req.user.id),
     supabaseAdmin.from('inquiries').select('*', { count: 'exact', head: true }).eq('status', 'new')
   ]);
 
   const { data: myProperties, error } = await supabaseAdmin
     .from('properties')
     .select('id,title,status,views_count,inquiries_count,favorites_count,created_at')
-    .eq('owner_id', req.user.id)
+    .eq('broker_id', req.user.id)
     .order('created_at', { ascending: false });
   if (error) throw error;
 

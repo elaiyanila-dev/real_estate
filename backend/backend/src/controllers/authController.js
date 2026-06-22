@@ -8,24 +8,13 @@ export const register = asyncHandler(async (req, res) => {
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
-    email_confirm: true,
+    email_confirm: false,
     user_metadata: { full_name: fullName, phone, role }
   });
   if (error) throw error;
 
-  const { error: profileError } = await supabaseAdmin.from('profiles').insert({
-    id: data.user.id,
-    full_name: fullName,
-    email,
-    phone,
-    role,
-    rera_number: reraNumber
-  });
-  if (profileError) throw profileError;
-
-  sendCreated(res, { id: data.user.id, email, role }, 'Registration successful');
+  sendCreated(res, { id: data.user.id, email, role }, 'Registration successful, please check your email to confirm your account');
 });
-
 export const login = asyncHandler(async (req, res) => {
   const { email, password, role } = req.validated.body;
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });

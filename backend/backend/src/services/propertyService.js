@@ -7,7 +7,7 @@ const propertySelect = `
   *,
   property_images(*),
   nearby_amenities(*),
-  profiles!properties_owner_id_fkey(id, full_name, email, phone, role)
+  profiles!properties_broker_id_fkey(id, full_name, email, phone, role)
 `;
 
 export const listProperties = async (query = {}) => {
@@ -67,7 +67,7 @@ export const getPropertyById = async (id, viewerId = null) => {
 export const createProperty = async ({ payload, ownerId, files }) => {
   const { data, error } = await supabaseAdmin
     .from('properties')
-    .insert({ ...payload, owner_id: ownerId, status: payload.status || PROPERTY_STATUS.PENDING })
+    .insert({ ...payload, broker_id: ownerId, status: payload.status || PROPERTY_STATUS.PENDING })
     .select('*')
     .single();
   if (error) throw error;
