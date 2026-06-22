@@ -62,9 +62,14 @@ const AlayaaLogo = () => (
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const [citiesOpen, setCitiesOpen] = useState(false)
+
+  const [loginOpen, setLoginOpen] = useState(false)
+  const [activeMenu, setActiveMenu] = useState(null)
+
   const [signInOpen, setSignInOpen] = useState(false)
   const [activeMega, setActiveMega] = useState(null)
   const [showPostModal, setShowPostModal] = useState(false)
+
 
   const handleMegaToggle = (label) => {
     setActiveMega(activeMega === label ? null : label)
@@ -198,6 +203,56 @@ export default function Navbar() {
         {/* Right side buttons remain the same */}
         <div className="hidden items-center gap-3 md:flex">
           <div className="relative">
+
+
+  <button
+    onClick={() => setLoginOpen(!loginOpen)}
+    className="btn-secondary flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
+  >
+    <UserRound size={16} />
+    Sign In
+    <ChevronDown size={14} />
+  </button>
+
+  <AnimatePresence>
+    {loginOpen && (
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        className="absolute right-0 mt-3 w-56 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl"
+      >
+
+        <Link
+          to="/login"
+          className="block rounded-lg px-4 py-3 hover:bg-[#F0FAF8]"
+        >
+          Customer Login
+        </Link>
+
+        <Link
+          to="/broker/login"
+          className="block rounded-lg px-4 py-3 hover:bg-[#F0FAF8]"
+        >
+          Broker Login
+        </Link>
+
+        <Link
+          to="/admin/login"
+          className="block rounded-lg px-4 py-3 hover:bg-[#F0FAF8]"
+        >
+          Admin Login
+        </Link>
+
+      </motion.div>
+
+    )}    
+  </AnimatePresence>
+
+</div>
+          <Link to="/broker/login" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
+
             <button onClick={() => setSignInOpen((v) => !v)} className="btn-secondary flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold">
               <UserRound size={16} /> Sign in
               <ChevronDown size={14} className={signInOpen ? 'rotate-180 transition' : 'transition'} />
@@ -221,6 +276,7 @@ export default function Navbar() {
           </div>
           
           <button onClick={() => setShowPostModal(true)} className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
+
             Post Property
           </button>
         </div>
