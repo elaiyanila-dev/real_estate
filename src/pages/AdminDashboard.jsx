@@ -31,9 +31,18 @@ import {
   updateUserRole,
 } from '../services/api.jsx'
 
+
 function formatPrice(value) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0))
 }
+
+const analytics = [
+  { label: 'Total Properties', value: '10,840', change: '+18%', icon: Building2 },
+  { label: 'Pending Approval', value: '128', change: '-9%', icon: Clock },
+  { label: 'Active Listings', value: '8,926', change: '+22%', icon: CheckCircle2 },
+  { label: 'User Analytics', value: '42.7K', change: '+18%', icon: BarChart3 },
+]
+
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth()

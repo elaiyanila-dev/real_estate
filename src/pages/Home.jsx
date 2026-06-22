@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import PostPropertyModal from '../components/PostPropertyModal.jsx'
 import React from 'react'
 import { Award, Building2, CheckCircle2, FileText, Headphones, Home as HomeIcon, TrendingUp, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -6,6 +8,7 @@ import HeroSection from '../components/HeroSection.jsx'
 import FeaturedProperties from '../components/FeaturedProperties.jsx'
 import PopularCities from '../components/PopularCities.jsx'
 import EMICalculator from '../components/EMICalculator.jsx'
+import MapView from '../components/MapView.jsx'
 import Footer from '../components/Footer.jsx'
 
 const propertyTypes = [
@@ -23,6 +26,7 @@ const advantages = [
 ]
 
 export default function Home() {
+const [showPostModal, setShowPostModal] = useState(false)
   return (
     <div className="app-shell">
       <Navbar />
@@ -58,7 +62,13 @@ export default function Home() {
         </div>
       </section>
 
-      <EMICalculator />
+      <div id="map">
+  <MapView properties={[]} />
+</div>
+
+<div id="services">
+  <EMICalculator />
+</div>
 
       <section className="bg-[#F8F8F7] py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -85,13 +95,17 @@ export default function Home() {
             <h2 className="mt-2 text-4xl font-extrabold">List premium Tamil Nadu properties on ALAYAA.</h2>
             <p className="mt-3 max-w-2xl text-white/70">Manage enquiries, approvals, customer analytics, and verified listing visibility from your dashboard.</p>
           </div>
-          <a href="/broker/login" className="rounded-full bg-white px-6 py-3 text-center font-bold text-[#134E4A] transition hover:bg-[#F8F8F7]">
-            Start Listing
-          </a>
+          <button
+  onClick={() => setShowPostModal(true)}
+  className="rounded-full bg-white px-6 py-3 text-center font-bold text-[#134E4A] transition hover:bg-[#F8F8F7]"
+>
+  Post Property Free
+</button>
         </div>
       </section>
 
       <Footer />
+{showPostModal && <PostPropertyModal onClose={() => setShowPostModal(false)} />}
     </div>
   )
 }
