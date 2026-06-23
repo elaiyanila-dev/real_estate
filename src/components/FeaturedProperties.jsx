@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Grid2X2, Map } from 'lucide-react'
 import PropertyCard from './PropertyCard.jsx'
 import MapView from './MapView.jsx'
 import PropertyComparison from './PropertyComparison.jsx'
-import { properties, tamilNaduCities } from '../data/properties.js'
+import { tamilNaduCities } from '../data/properties.js'
+import { fetchProperties } from '../services/Api.jsx'
 
 const budgetRanges = [
   { label: 'Any Budget', min: 0, max: Infinity },
@@ -19,6 +20,22 @@ export default function FeaturedProperties() {
   const [city, setCity] = useState('All')
   const [view, setView] = useState('list')
   const [selected, setSelected] = useState([])
+  const [properties, setProperties] = useState([])
+  const [loading, setLoading] = useState(true)
+useEffect(() => {
+  let mounted = true
+  fetchProperties({ status: 'active' })
+    .then((data) => {
+      console.log('FETCHED PROPERTIES:', data)
+      if (mounted) setProperties(data)
+    })
+    .catch((err) => {
+      console.error('FETCH PROPERTIES ERROR:', err)
+      if (mounted) setProperties([])
+    })
+    .finally(() => { if (mounted) setLoading(false) })
+  return () => { mounted = false }
+}, [])
 
   const filtered = useMemo(() => properties.filter((property) => {
     const budgetMatch = property.priceValue >= budget.min && property.priceValue <= budget.max

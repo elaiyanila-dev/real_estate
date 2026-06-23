@@ -22,7 +22,7 @@ export default function CustomerLogin() {
     setError('')
     try {
       await login({ email, password, role: 'customer' })
-      navigate('/dashboard', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {

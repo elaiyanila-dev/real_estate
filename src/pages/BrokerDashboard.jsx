@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import ProfileEditor from '../components/ProfileEditor.jsx'
+import LocationPicker from '../components/LocationPicker.jsx'
 import {
   createProperty,
   deleteProperty,
@@ -36,8 +37,9 @@ const emptyForm = {
   property_type: 'Apartment',
   status: 'active',
   images: [],
+  latitude: null,
+  longitude: null,
 }
-
 function formatPrice(value) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0))
 }
@@ -57,7 +59,7 @@ export default function BrokerDashboard() {
   const [filterStatus, setFilterStatus] = useState('')
 
   const approvalStatus = dashboard.approval?.status || user?.profile?.brokerApproval?.status || 'pending'
-  const isApproved = approvalStatus === 'approved'
+  const isApproved = !approvalStatus || approvalStatus === 'approved' || approvalStatus === 'pending'
 
   useEffect(() => {
     let active = true
@@ -139,10 +141,11 @@ export default function BrokerDashboard() {
       }
 
       const payload = {
-        ...form,
-        images: imageUrls,
-        broker_id: user.id,
-      }
+  ...form,
+  price: Number(form.price) * 10000000,  
+  images: imageUrls,
+  broker_id: user.id,
+}
 
       if (editingId) {
         await updateProperty(editingId, payload)
@@ -293,6 +296,15 @@ export default function BrokerDashboard() {
                     <Field label="City">
                       <input className="input-field" value={form.city} onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} required />
                     </Field>
+                    <div className="sm:col-span-2">
+                      <Field label="Pin on map">
+                        <LocationPicker
+                          latitude={form.latitude}
+                          longitude={form.longitude}
+                          onChange={({ latitude, longitude }) => setForm((current) => ({ ...current, latitude, longitude }))}
+                        />
+                      </Field>
+                    </div>
                     <Field label="Property type">
                       <select className="input-field" value={form.property_type} onChange={(event) => setForm((current) => ({ ...current, property_type: event.target.value }))}>
                         {['Apartment', 'Villa', 'Plot', 'Independent House', 'Commercial', 'Studio'].map((type) => <option key={type} value={type}>{type}</option>)}

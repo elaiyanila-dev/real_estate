@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient.js'
 const SITE_URL = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '')
 const AVATAR_BUCKET = 'profile-pictures'
 const PROPERTY_BUCKET = 'property-images'
-const EMAIL_FUNCTION = 'send-notification-email'
+const EMAIL_FUNCTION = 'send_notification_email'
 
 function asArray(value) {
   return Array.isArray(value) ? value : []
@@ -29,26 +29,48 @@ function normalizeProfile(row, brokerApproval = null) {
     brokerApproval,
   }
 }
-
+function formatIndianPrice(value) {
+  const num = Number(value || 0)
+  if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`
+  if (num >= 100000)   return `₹${(num / 100000).toFixed(2)} L`
+  if (num >= 1000)     return `₹${(num / 1000).toFixed(1)}K`
+  if (num === 0)       return 'On request'
+  return `₹${num.toLocaleString('en-IN')}`
+}
 function normalizeProperty(row) {
   if (!row) return null
+  console.log('RAW ROW IMAGES:', row.images, 'TYPE:', typeof row.images, 'IS ARRAY:', Array.isArray(row.images), 'TITLE:', row.title)
   return {
     id: row.id,
-    broker_id: row.broker_id,
+    broker_id: row.broker_id || null,
     title: row.title || '',
     description: row.description || '',
-    price: Number(row.price || 0),
-    location: row.location || '',
     city: row.city || '',
+    locality: row.locality || '',
+    location: row.location || '',
+    price: row.price || 'On request',
+    priceValue: Number(row.price_value || 0) / 100000, // convert raw rupees to lakhs, matching mock data's scale
+    bhk: Number(row.bhk || row.bedrooms || 0),
     bedrooms: Number(row.bedrooms || 0),
     bathrooms: Number(row.bathrooms || 0),
-    area: Number(row.area || 0),
-    property_type: row.property_type || '',
+    area: row.area ? `${row.area} sq.ft` : (row.area_value ? `${row.area_value} sq.ft` : ''),
+    areaValue: Number(row.area_value || row.area || 0),
+    propertyType: row.property_type || '',
+    listingType: row.listing_type || 'Buy',
+    image: row.image || (Array.isArray(row.images) && row.images[0]) || '',
+    images: Array.isArray(row.images) ? row.images : (row.image ? [row.image] : []),
+    latitude: row.latitude ? Number(row.latitude) : null,
+    longitude: row.longitude ? Number(row.longitude) : null,
+    verified: Boolean(row.verified),
+    amenities: row.amenities || [],
+    parking: row.parking || '',
+    furnishing: row.furnishing || '',
     status: row.status || 'draft',
-    images: asArray(row.images),
+    nearby: { school: row.school_distance || '—', railway: row.rail_distance || '—' },
     created_at: row.created_at || null,
   }
 }
+
 
 function normalizeFavourite(row, property = null) {
   return {
@@ -87,8 +109,9 @@ async function getCurrentAuthUser() {
   return data.user || null
 }
 
+
 async function fetchBrokerApproval(brokerId) {
-  return  null
+  return { status: 'approved' }  
 }
 
 async function ensureProfileForAuthUser(authUser) {
@@ -102,6 +125,29 @@ async function ensureProfileForAuthUser(authUser) {
 
   if (data) {
     return data
+  }
+
+  
+  if (authUser.email) {
+    const { data: byEmail, error: emailError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', authUser.email)
+      .maybeSingle()
+
+    if (emailError) throw emailError
+
+    if (byEmail) {
+      const { data: relinked, error: relinkError } = await supabase
+        .from('profiles')
+        .update({ id: authUser.id })
+        .eq('email', authUser.email)
+        .select('*')
+        .single()
+
+      if (relinkError) throw relinkError
+      return relinked
+    }
   }
 
   const metadata = safeJson(authUser.user_metadata)
@@ -316,8 +362,12 @@ export async function uploadProfilePicture(file, userId) {
   const filePath = `${userId}/${crypto.randomUUID()}.${extension}`
 
   const { error } = await supabase.storage
-    .from(AVATAR_BUCKET)
-    .upload(filePath, file, { upsert: true, cacheControl: '3600', contentType: file.type })
+  .from(PROPERTY_BUCKET)
+  .upload(filePath, file, { upsert: true, cacheControl: '3600', contentType: file.type })
+
+console.log('UPLOAD ERROR DETAIL:', error, 'BUCKET:', PROPERTY_BUCKET, 'PATH:', filePath, 'FILE TYPE:', file.type)
+
+if (error) throw error
 
   if (error) throw error
 
@@ -367,8 +417,8 @@ export async function fetchProperties(filters = {}) {
   }
 
   if (city) {
-    request = request.eq('city', city)
-  }
+  request = request.ilike('city', city)
+}
 
   if (propertyType) {
     request = request.eq('property_type', propertyType)
@@ -419,12 +469,23 @@ export async function fetchPropertyById(id) {
   return normalizeProperty(data)
 }
 
+// AFTER
 export async function fetchBrokerProperties(brokerId) {
-  return fetchProperties({ brokerId, status: '' })
+  const { data, error } = await supabase
+    .from('properties')
+    .select('*')
+    .eq('broker_id', brokerId)   // ✅ directly filter
+    .order('id', { ascending: false })
+
+  if (error) throw error
+  return (data || []).map(normalizeProperty)
 }
 
 export async function createProperty(payload) {
-  const { data: authUser } = await supabase.auth.getUser()
+  const { data: authUser, error: authErr } = await supabase.auth.getUser()
+  console.log('AUTH USER:', authUser, 'AUTH ERROR:', authErr)
+  const { data: sessionData } = await supabase.auth.getSession()
+  console.log('SESSION:', sessionData)
   const brokerId = payload.broker_id || authUser.user?.id
   if (!brokerId) throw new Error('A logged in broker is required.')
 
@@ -432,7 +493,7 @@ export async function createProperty(payload) {
     broker_id: brokerId,
     title: payload.title,
     description: payload.description,
-    price: Number(payload.price || 0),
+   price_value: Number(payload.price || 0),  
     location: payload.location,
     city: payload.city,
     bedrooms: Number(payload.bedrooms || 0),
@@ -453,13 +514,15 @@ export async function createProperty(payload) {
   return normalizeProperty(data)
 }
 
+// AFTER
 export async function updateProperty(id, payload) {
   const row = {
     title: payload.title,
     description: payload.description,
-    price: Number(payload.price || 0),
+    price_value: Number(payload.price || 0),  
     location: payload.location,
     city: payload.city,
+    locality: payload.locality || '',
     bedrooms: Number(payload.bedrooms || 0),
     bathrooms: Number(payload.bathrooms || 0),
     area: Number(payload.area || 0),
@@ -468,6 +531,7 @@ export async function updateProperty(id, payload) {
     images: asArray(payload.images),
     updated_at: new Date().toISOString(),
   }
+  
 
   const { data, error } = await supabase
     .from('properties')

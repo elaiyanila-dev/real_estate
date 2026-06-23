@@ -19,7 +19,7 @@ export default function AdminLogin() {
     setError('')
     try {
       await login({ email, password, role: 'admin' })
-      navigate('/admin/dashboard', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {

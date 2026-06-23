@@ -22,7 +22,7 @@ export default function BrokerLogin() {
     setError('')
     try {
       await login({ email, password, role: 'broker' })
-      navigate('/broker/dashboard', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {

@@ -2,7 +2,11 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, Menu, Search, UserRound, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
+import { LogOut, Settings } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext.jsx'
 import { tamilNaduCities } from '../data/properties.js'
+
 
 const navLinks = ['Buy', 'Rent', 'Commercial', 'New Projects', 'Plots', 'Map View', 'Services']
 
@@ -13,6 +17,8 @@ const AlayaaLogo = () => (
 )
 
 export default function Navbar() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [citiesOpen, setCitiesOpen] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
@@ -24,6 +30,17 @@ export default function Navbar() {
     if (label === 'Services') return '#services'
     if (label === 'Plots') return '#featured'
     return '#featured'
+  }
+  const roleDashboardPath = {
+    customer: '/dashboard',
+    broker: '/broker/dashboard',
+    admin: '/admin/dashboard',
+  }[user?.profile?.role] || '/dashboard'
+
+  const handleLogout = async () => {
+    await logout()
+    setLoginOpen(false)
+    navigate('/')
   }
 
   return (
@@ -75,54 +92,80 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <div className="relative">
+         <div className="relative">
+            {user ? (
+              <>
+                <button
+                  onClick={() => setLoginOpen(!loginOpen)}
+                  className="btn-secondary flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0F766E] text-xs font-bold text-white">
+                    {(user.profile?.full_name || user.email || 'U').charAt(0).toUpperCase()}
+                  </span>
+                  {user.profile?.full_name || user.email}
+                  <ChevronDown size={14} />
+                </button>
 
-  <button
-    onClick={() => setLoginOpen(!loginOpen)}
-    className="btn-secondary flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
-  >
-    <UserRound size={16} />
-    Sign In
-    <ChevronDown size={14} />
-  </button>
+                <AnimatePresence>
+                  {loginOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute right-0 mt-3 w-56 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl"
+                    >
+                      <Link
+                        to={roleDashboardPath}
+                        onClick={() => setLoginOpen(false)}
+                        className="block rounded-lg px-4 py-3 hover:bg-[#F0FAF8]"
+                      >
+                        My Dashboard
+                      </Link>
+                      <Link
+                        to={roleDashboardPath}
+                        onClick={() => setLoginOpen(false)}
+                        className="flex items-center gap-2 rounded-lg px-4 py-3 hover:bg-[#F0FAF8]"
+                      >
+                        <Settings size={15} /> Modify Profile
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-2 rounded-lg px-4 py-3 text-left text-rose-600 hover:bg-rose-50"
+                      >
+                        <LogOut size={15} /> Logout
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setLoginOpen(!loginOpen)}
+                  className="btn-secondary flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
+                >
+                  <UserRound size={16} />
+                  Sign In
+                  <ChevronDown size={14} />
+                </button>
 
-  <AnimatePresence>
-    {loginOpen && (
-
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 10 }}
-        className="absolute right-0 mt-3 w-56 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl"
-      >
-
-        <Link
-          to="/login"
-          className="block rounded-lg px-4 py-3 hover:bg-[#F0FAF8]"
-        >
-          Customer Login
-        </Link>
-
-        <Link
-          to="/broker/login"
-          className="block rounded-lg px-4 py-3 hover:bg-[#F0FAF8]"
-        >
-          Broker Login
-        </Link>
-
-        <Link
-          to="/admin/login"
-          className="block rounded-lg px-4 py-3 hover:bg-[#F0FAF8]"
-        >
-          Admin Login
-        </Link>
-
-      </motion.div>
-
-    )}    
-  </AnimatePresence>
-
-</div>
+                <AnimatePresence>
+                  {loginOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute right-0 mt-3 w-56 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl"
+                    >
+                      <Link to="/login" className="block rounded-lg px-4 py-3 hover:bg-[#F0FAF8]">Customer Login</Link>
+                      <Link to="/broker/login" className="block rounded-lg px-4 py-3 hover:bg-[#F0FAF8]">Broker Login</Link>
+                      <Link to="/admin/login" className="block rounded-lg px-4 py-3 hover:bg-[#F0FAF8]">Admin Login</Link>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
+          </div>
           <Link to="/broker/login" className="btn-primary rounded-full px-4 py-2 text-sm font-semibold">
             Post Property
           </Link>
@@ -160,8 +203,17 @@ export default function Navbar() {
               ))}
             </div>
             <div className="mt-4 flex gap-2">
-              <Link to="/login" className="btn-secondary flex-1 rounded-xl px-4 py-2 text-center text-sm font-semibold">Sign in</Link>
-              <Link to="/broker/login" className="btn-primary flex-1 rounded-xl px-4 py-2 text-center text-sm font-semibold">Post</Link>
+              {user ? (
+                <>
+                  <Link to={roleDashboardPath} className="btn-secondary flex-1 rounded-xl px-4 py-2 text-center text-sm font-semibold">Dashboard</Link>
+                  <button onClick={handleLogout} className="btn-primary flex-1 rounded-xl px-4 py-2 text-center text-sm font-semibold">Logout</button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" className="btn-secondary flex-1 rounded-xl px-4 py-2 text-center text-sm font-semibold">Sign in</Link>
+                  <Link to="/broker/login" className="btn-primary flex-1 rounded-xl px-4 py-2 text-center text-sm font-semibold">Post</Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}

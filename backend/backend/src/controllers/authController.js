@@ -3,14 +3,18 @@ import { sendSuccess, sendCreated } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../middleware/errorHandler.js';
 
+
 export const register = asyncHandler(async (req, res) => {
   const { fullName, email, password, phone, role, reraNumber } = req.validated.body;
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    email_confirm: false,
-    user_metadata: { full_name: fullName, phone, role }
+    options: {
+      data: { full_name: fullName, phone, role }
+    }
   });
+  console.log('SIGNUP DATA:', data);
+  console.log('SIGNUP ERROR:', error);
   if (error) throw error;
 
   sendCreated(res, { id: data.user.id, email, role }, 'Registration successful, please check your email to confirm your account');
