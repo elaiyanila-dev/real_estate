@@ -309,7 +309,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <Badge>{property.status}</Badge>
-                          <Badge>{formatPrice(property.price)}</Badge>
+                          <Badge>{property.price || formatPrice(property.priceValue * 100000)}</Badge>
                         </div>
                       </div>
                       <div className="mt-4 flex flex-wrap gap-2">
