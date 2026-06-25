@@ -20,7 +20,6 @@ import {
   createProperty,
   deleteProperty,
   fetchBrokerDashboard,
-  fetchProperties,
   updateProperty,
   uploadPropertyImages,
 } from '../services/api.jsx'
@@ -40,8 +39,13 @@ const emptyForm = {
   latitude: null,
   longitude: null,
 }
+
 function formatPrice(value) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0))
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0))
 }
 
 export default function BrokerDashboard() {
@@ -49,7 +53,12 @@ export default function BrokerDashboard() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('overview')
   const [loading, setLoading] = useState(true)
-  const [dashboard, setDashboard] = useState({ properties: [], enquiries: [], approval: null, stats: { totalProperties: 0, totalEnquiries: 0, pendingEnquiries: 0 } })
+  const [dashboard, setDashboard] = useState({
+    properties: [],
+    enquiries: [],
+    approval: null,
+    stats: { totalProperties: 0, totalEnquiries: 0, pendingEnquiries: 0 },
+  })
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
   const [form, setForm] = useState(emptyForm)
@@ -58,12 +67,13 @@ export default function BrokerDashboard() {
   const [query, setQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
 
-  const approvalStatus = dashboard.approval?.status || user?.profile?.brokerApproval?.status || 'pending'
-  const isApproved = !approvalStatus || approvalStatus === 'approved' || approvalStatus === 'pending'
+  const approvalStatus =
+    dashboard.approval?.status || user?.profile?.brokerApproval?.status || 'pending'
+  const isApproved =
+    !approvalStatus || approvalStatus === 'approved' || approvalStatus === 'pending'
 
   useEffect(() => {
     let active = true
-
     const load = async () => {
       if (!user?.id) return
       setLoading(true)
@@ -77,19 +87,18 @@ export default function BrokerDashboard() {
         if (active) setLoading(false)
       }
     }
-
     load()
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [user?.id])
 
   const visibleProperties = useMemo(() => {
     return dashboard.properties.filter((property) => {
-      const matchesQuery = !query || [property.title, property.location, property.city, property.description]
-        .join(' ')
-        .toLowerCase()
-        .includes(query.toLowerCase())
+      const matchesQuery =
+        !query ||
+        [property.title, property.location, property.city, property.description]
+          .join(' ')
+          .toLowerCase()
+          .includes(query.toLowerCase())
       const matchesStatus = !filterStatus || property.status === filterStatus
       return matchesQuery && matchesStatus
     })
@@ -131,7 +140,6 @@ export default function BrokerDashboard() {
       setToast('Your broker account must be approved before managing listings.')
       return
     }
-
     setSaving(true)
     try {
       let imageUrls = form.images
@@ -139,14 +147,12 @@ export default function BrokerDashboard() {
         const uploads = await uploadPropertyImages(fileList, user.id)
         imageUrls = [...form.images, ...uploads]
       }
-
       const payload = {
-  ...form,
-  price: Number(form.price) * 10000000,  
-  images: imageUrls,
-  broker_id: user.id,
-}
-
+        ...form,
+        price: Number(form.price) * 10000000,
+        images: imageUrls,
+        broker_id: user.id,
+      }
       if (editingId) {
         await updateProperty(editingId, payload)
         setToast('Property updated successfully.')
@@ -154,7 +160,6 @@ export default function BrokerDashboard() {
         await createProperty(payload)
         setToast('Property created successfully.')
       }
-
       const refreshed = await fetchBrokerDashboard(user.id)
       setDashboard(refreshed)
       resetForm()
@@ -184,7 +189,9 @@ export default function BrokerDashboard() {
     <div className="min-h-screen bg-[#FAF9F6]">
       <aside className="fixed left-0 top-0 hidden h-full w-64 border-r border-[#E5E7EB] bg-white p-5 lg:flex lg:flex-col">
         <Link to="/" className="mb-10 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0F766E] font-extrabold text-white">B</div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0F766E] font-extrabold text-white">
+            B
+          </div>
           <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6B7280]">Broker</div>
             <div className="text-xl font-extrabold text-[#134E4A]">ALAYAA</div>
@@ -201,14 +208,19 @@ export default function BrokerDashboard() {
               key={id}
               onClick={() => setTab(id)}
               className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition ${
-                tab === id ? 'bg-[#0F766E] text-white' : 'text-[#6B7280] hover:bg-[#F0FAF8] hover:text-[#0F766E]'
+                tab === id
+                  ? 'bg-[#0F766E] text-white'
+                  : 'text-[#6B7280] hover:bg-[#F0FAF8] hover:text-[#0F766E]'
               }`}
             >
               <Icon size={17} /> {label}
             </button>
           ))}
         </nav>
-        <button onClick={handleLogout} className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-[#6B7280] hover:bg-[#F8F8F7]">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-[#6B7280] hover:bg-[#F8F8F7]"
+        >
           <LogOut size={17} /> Logout
         </button>
       </aside>
@@ -252,18 +264,29 @@ export default function BrokerDashboard() {
               <section className="surface rounded-[28px] p-6">
                 <h2 className="text-2xl font-extrabold text-[#1F2937]">Latest enquiries</h2>
                 <div className="mt-5 space-y-3">
-                  {dashboard.enquiries.length ? dashboard.enquiries.slice(0, 3).map((item) => (
-                    <div key={item.id} className="rounded-3xl border border-[#E5E7EB] bg-white p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <div className="font-extrabold text-[#1F2937]">{item.property?.title || 'Property enquiry'}</div>
-                          <div className="mt-1 text-sm text-[#6B7280]">{item.property?.location || item.property?.city || ''}</div>
+                  {dashboard.enquiries.length ? (
+                    dashboard.enquiries.slice(0, 3).map((item) => (
+                      <div key={item.id} className="rounded-3xl border border-[#E5E7EB] bg-white p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="font-extrabold text-[#1F2937]">
+                              {item.property?.title || 'Property enquiry'}
+                            </div>
+                            <div className="mt-1 text-sm text-[#6B7280]">
+                              {item.property?.location || item.property?.city || ''}
+                            </div>
+                          </div>
+                          <StatusPill>{item.status}</StatusPill>
                         </div>
-                        <StatusPill>{item.status}</StatusPill>
+                        <p className="mt-4 text-sm leading-6 text-[#6B7280]">{item.message}</p>
                       </div>
-                      <p className="mt-4 text-sm leading-6 text-[#6B7280]">{item.message}</p>
-                    </div>
-                  )) : <EmptyState title="No enquiries yet" description="Customer enquiries will appear here once your listings are live." />}
+                    ))
+                  ) : (
+                    <EmptyState
+                      title="No enquiries yet"
+                      description="Customer enquiries will appear here once your listings are live."
+                    />
+                  )}
                 </div>
               </section>
             </div>
@@ -274,54 +297,123 @@ export default function BrokerDashboard() {
               <section className="surface rounded-[28px] p-6 sm:p-8">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-extrabold text-[#1F2937]">{editingId ? 'Edit property' : 'Add property'}</h2>
-                    <p className="mt-1 text-sm text-[#6B7280]">Publish verified listings from your broker account.</p>
+                    <h2 className="text-2xl font-extrabold text-[#1F2937]">
+                      {editingId ? 'Edit property' : 'Add property'}
+                    </h2>
+                    <p className="mt-1 text-sm text-[#6B7280]">
+                      Publish verified listings from your broker account.
+                    </p>
                   </div>
-                  {editingId ? <button onClick={resetForm} className="text-sm font-bold text-[#0F766E]">Cancel edit</button> : null}
+                  {editingId ? (
+                    <button onClick={resetForm} className="text-sm font-bold text-[#0F766E]">
+                      Cancel edit
+                    </button>
+                  ) : null}
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <Field label="Title">
-                    <input className="input-field" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} required />
+                    <input
+                      className="input-field"
+                      value={form.title}
+                      onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))}
+                      required
+                    />
                   </Field>
                   <Field label="Description">
-                    <textarea className="input-field min-h-28 resize-none" value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} required />
+                    <textarea
+                      className="input-field min-h-28 resize-none"
+                      value={form.description}
+                      onChange={(e) => setForm((c) => ({ ...c, description: e.target.value }))}
+                      required
+                    />
                   </Field>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Price">
-                      <input className="input-field" type="number" value={form.price} onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} required />
+                      <input
+                        className="input-field"
+                        type="number"
+                        value={form.price}
+                        onChange={(e) => setForm((c) => ({ ...c, price: e.target.value }))}
+                        required
+                      />
                     </Field>
                     <Field label="Location">
-                      <input className="input-field" value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} required />
+                      <input
+                        className="input-field"
+                        value={form.location}
+                        onChange={(e) => setForm((c) => ({ ...c, location: e.target.value }))}
+                        required
+                      />
                     </Field>
                     <Field label="City">
-                      <input className="input-field" value={form.city} onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} required />
+                      <input
+                        className="input-field"
+                        value={form.city}
+                        onChange={(e) => setForm((c) => ({ ...c, city: e.target.value }))}
+                        required
+                      />
                     </Field>
                     <div className="sm:col-span-2">
                       <Field label="Pin on map">
                         <LocationPicker
                           latitude={form.latitude}
                           longitude={form.longitude}
-                          onChange={({ latitude, longitude }) => setForm((current) => ({ ...current, latitude, longitude }))}
+                          onChange={({ latitude, longitude }) =>
+                            setForm((c) => ({ ...c, latitude, longitude }))
+                          }
                         />
                       </Field>
                     </div>
                     <Field label="Property type">
-                      <select className="input-field" value={form.property_type} onChange={(event) => setForm((current) => ({ ...current, property_type: event.target.value }))}>
-                        {['Apartment', 'Villa', 'Plot', 'Independent House', 'Commercial', 'Studio'].map((type) => <option key={type} value={type}>{type}</option>)}
+                      <select
+                        className="input-field"
+                        value={form.property_type}
+                        onChange={(e) => setForm((c) => ({ ...c, property_type: e.target.value }))}
+                      >
+                        {['Apartment', 'Villa', 'Plot', 'Independent House', 'Commercial', 'Studio'].map(
+                          (type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          )
+                        )}
                       </select>
                     </Field>
                     <Field label="Bedrooms">
-                      <input className="input-field" type="number" value={form.bedrooms} onChange={(event) => setForm((current) => ({ ...current, bedrooms: event.target.value }))} />
+                      <input
+                        className="input-field"
+                        type="number"
+                        value={form.bedrooms}
+                        onChange={(e) => setForm((c) => ({ ...c, bedrooms: e.target.value }))}
+                      />
                     </Field>
                     <Field label="Bathrooms">
-                      <input className="input-field" type="number" value={form.bathrooms} onChange={(event) => setForm((current) => ({ ...current, bathrooms: event.target.value }))} />
+                      <input
+                        className="input-field"
+                        type="number"
+                        value={form.bathrooms}
+                        onChange={(e) => setForm((c) => ({ ...c, bathrooms: e.target.value }))}
+                      />
                     </Field>
                     <Field label="Area (sq ft)">
-                      <input className="input-field" type="number" value={form.area} onChange={(event) => setForm((current) => ({ ...current, area: event.target.value }))} />
+                      <input
+                        className="input-field"
+                        type="number"
+                        value={form.area}
+                        onChange={(e) => setForm((c) => ({ ...c, area: e.target.value }))}
+                      />
                     </Field>
                     <Field label="Status">
-                      <select className="input-field" value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}>
-                        {['active', 'draft', 'pending', 'sold', 'rented'].map((status) => <option key={status} value={status}>{status}</option>)}
+                      <select
+                        className="input-field"
+                        value={form.status}
+                        onChange={(e) => setForm((c) => ({ ...c, status: e.target.value }))}
+                      >
+                        {['active', 'draft', 'pending', 'sold', 'rented'].map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
                       </select>
                     </Field>
                   </div>
@@ -330,13 +422,15 @@ export default function BrokerDashboard() {
                       <Upload size={16} className="text-[#0F766E]" />
                       Property images
                     </div>
-                    <p className="mt-1 text-xs text-[#6B7280]">Upload JPG or PNG images. They will be stored in Supabase Storage.</p>
+                    <p className="mt-1 text-xs text-[#6B7280]">
+                      Upload JPG or PNG images. They will be stored in Supabase Storage.
+                    </p>
                     <input
                       type="file"
                       multiple
                       accept="image/*"
                       className="mt-4 block w-full text-sm text-[#6B7280]"
-                      onChange={(event) => setFileList([...event.target.files])}
+                      onChange={(e) => setFileList([...e.target.files])}
                     />
                     {form.images.length ? (
                       <div className="mt-4 flex flex-wrap gap-2">
@@ -346,7 +440,11 @@ export default function BrokerDashboard() {
                       </div>
                     ) : null}
                   </div>
-                  <button type="submit" disabled={saving || !isApproved} className="btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3 font-bold disabled:opacity-60">
+                  <button
+                    type="submit"
+                    disabled={saving || !isApproved}
+                    className="btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3 font-bold disabled:opacity-60"
+                  >
                     {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                     {editingId ? 'Update property' : 'Create property'}
                   </button>
@@ -357,13 +455,28 @@ export default function BrokerDashboard() {
                 <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <h2 className="text-2xl font-extrabold text-[#1F2937]">My listings</h2>
-                    <p className="mt-1 text-sm text-[#6B7280]">Review, edit, and remove your published properties.</p>
+                    <p className="mt-1 text-sm text-[#6B7280]">
+                      Review, edit, and remove your published properties.
+                    </p>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <input className="input-field" placeholder="Search listings" value={query} onChange={(event) => setQuery(event.target.value)} />
-                    <select className="input-field" value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}>
+                    <input
+                      className="input-field"
+                      placeholder="Search listings"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                    />
+                    <select
+                      className="input-field"
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                    >
                       <option value="">All statuses</option>
-                      {['active', 'draft', 'pending', 'sold', 'rented'].map((status) => <option key={status} value={status}>{status}</option>)}
+                      {['active', 'draft', 'pending', 'sold', 'rented'].map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -387,15 +500,21 @@ export default function BrokerDashboard() {
                         </div>
                         <div className="mt-3 text-sm leading-6 text-[#6B7280]">{property.description}</div>
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                          <div className="text-xl font-extrabold text-[#134E4A]">{formatPrice(property.price)}</div>
+                          <div className="text-xl font-extrabold text-[#134E4A]">
+                            {formatPrice(property.price)}
+                          </div>
                           <div className="flex gap-2">
-                            <button onClick={() => startEdit(property)} className="rounded-2xl bg-[#F0FAF8] px-4 py-2 text-sm font-bold text-[#0F766E]">
-                              <Pencil size={14} className="mr-1 inline-block" />
-                              Edit
+                            <button
+                              onClick={() => startEdit(property)}
+                              className="rounded-2xl bg-[#F0FAF8] px-4 py-2 text-sm font-bold text-[#0F766E]"
+                            >
+                              <Pencil size={14} className="mr-1 inline-block" /> Edit
                             </button>
-                            <button onClick={() => handleDelete(property.id)} className="rounded-2xl bg-rose-50 px-4 py-2 text-sm font-bold text-rose-600">
-                              <Trash2 size={14} className="mr-1 inline-block" />
-                              Delete
+                            <button
+                              onClick={() => handleDelete(property.id)}
+                              className="rounded-2xl bg-rose-50 px-4 py-2 text-sm font-bold text-rose-600"
+                            >
+                              <Trash2 size={14} className="mr-1 inline-block" /> Delete
                             </button>
                           </div>
                         </div>
@@ -403,7 +522,10 @@ export default function BrokerDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState title="No properties yet" description="Create your first listing to start generating enquiries." />
+                  <EmptyState
+                    title="No properties yet"
+                    description="Create your first listing to start generating enquiries."
+                  />
                 )}
               </section>
             </div>
@@ -414,24 +536,36 @@ export default function BrokerDashboard() {
               <h2 className="text-2xl font-extrabold text-[#1F2937]">Incoming enquiries</h2>
               <p className="mt-1 text-sm text-[#6B7280]">Customer messages attached to your listings.</p>
               <div className="mt-6 space-y-3">
-                {dashboard.enquiries.length ? dashboard.enquiries.map((item) => (
-                  <div key={item.id} className="rounded-3xl border border-[#E5E7EB] bg-white p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <div className="font-extrabold text-[#1F2937]">{item.property?.title || 'Property enquiry'}</div>
-                        <div className="mt-1 text-sm text-[#6B7280]">{item.property?.city || ''}</div>
+                {dashboard.enquiries.length ? (
+                  dashboard.enquiries.map((item) => (
+                    <div key={item.id} className="rounded-3xl border border-[#E5E7EB] bg-white p-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <div className="font-extrabold text-[#1F2937]">
+                            {item.property?.title || 'Property enquiry'}
+                          </div>
+                          <div className="mt-1 text-sm text-[#6B7280]">{item.property?.city || ''}</div>
+                        </div>
+                        <StatusPill>{item.status}</StatusPill>
                       </div>
-                      <StatusPill>{item.status}</StatusPill>
+                      <p className="mt-4 text-sm leading-6 text-[#6B7280]">{item.message}</p>
                     </div>
-                    <p className="mt-4 text-sm leading-6 text-[#6B7280]">{item.message}</p>
-                  </div>
-                )) : <EmptyState title="No enquiries yet" description="You will see customer enquiries here after properties go live." />}
+                  ))
+                ) : (
+                  <EmptyState
+                    title="No enquiries yet"
+                    description="You will see customer enquiries here after properties go live."
+                  />
+                )}
               </div>
             </section>
           ) : null}
 
           {tab === 'profile' ? (
-            <ProfileEditor title="Broker profile" subtitle="Update the information customers see on your public profile." />
+            <ProfileEditor
+              title="Broker profile"
+              subtitle="Update the information customers see on your public profile."
+            />
           ) : null}
         </div>
       </main>
@@ -459,7 +593,11 @@ function StatCard({ icon: Icon, label, value }) {
 }
 
 function StatusPill({ children }) {
-  return <span className="rounded-full bg-[#F0FAF8] px-3 py-1 text-xs font-bold text-[#0F766E]">{children}</span>
+  return (
+    <span className="rounded-full bg-[#F0FAF8] px-3 py-1 text-xs font-bold text-[#0F766E]">
+      {children}
+    </span>
+  )
 }
 
 function EmptyState({ title, description }) {
@@ -478,8 +616,9 @@ function Toast({ text, onClose }) {
   return (
     <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#134E4A] px-5 py-4 text-sm font-bold text-white shadow-xl">
       {text}
-      <button onClick={onClose} className="ml-4 text-white/70 hover:text-white">x</button>
+      <button onClick={onClose} className="ml-4 text-white/70 hover:text-white">
+        x
+      </button>
     </div>
   )
 }
-
