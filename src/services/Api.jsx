@@ -275,6 +275,9 @@ export async function register(payload) {
     },
   })
 
+  console.log('SIGNUP RESULT DATA:', data)
+  console.log('SIGNUP RESULT ERROR:', error)
+
   if (error) throw error
 
   if (data.user) {
