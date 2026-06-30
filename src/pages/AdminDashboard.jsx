@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Building2,
@@ -16,9 +16,9 @@ import {
   Users,
   Loader2,
   Trash2,
-} from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext.jsx'
-import ProfileEditor from '../components/ProfileEditor.jsx'
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import ProfileEditor from '../components/ProfileEditor.jsx';
 import {
   approveBroker,
   deleteProperty,
@@ -29,74 +29,77 @@ import {
   rejectBroker,
   updateProperty,
   updateUserRole,
-} from '../services/api.jsx'
-
+} from '../services/api.jsx';
 
 function formatPrice(value) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0))
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0));
 }
 
 const analytics = [
   { label: 'Total Properties', value: '10,840', change: '+18%', icon: Building2 },
-  { label: 'Pending Approval', value: '128', change: '-9%', icon: Clock },
+  { label: 'Pending Approval', value: '128', change: '-9%', icon: Clock3 },
   { label: 'Active Listings', value: '8,926', change: '+22%', icon: CheckCircle2 },
   { label: 'User Analytics', value: '42.7K', change: '+18%', icon: BarChart3 },
-]
-
+];
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  const [tab, setTab] = useState('overview')
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ propertiesCount: 0, usersCount: 0, enquiriesCount: 0, brokerRequestsCount: 0 })
-  const [pendingBrokers, setPendingBrokers] = useState([])
-  const [users, setUsers] = useState([])
-  const [properties, setProperties] = useState([])
-  const [query, setQuery] = useState('')
-  const [toast, setToast] = useState('')
-  const [saving, setSaving] = useState(false)
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState('overview');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ propertiesCount: 0, usersCount: 0, enquiriesCount: 0, brokerRequestsCount: 0 });
+  const [pendingBrokers, setPendingBrokers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [properties, setProperties] = useState([]);
+  const [query, setQuery] = useState('');
+  const [toast, setToast] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const filteredProperties = useMemo(() => {
-    const term = query.trim().toLowerCase()
-    if (!term) return properties
-    return properties.filter((property) => [property.title, property.location, property.city, property.property_type].join(' ').toLowerCase().includes(term))
-  }, [properties, query])
+    const term = query.trim().toLowerCase();
+    if (!term) return properties;
+    return properties.filter((property) =>
+      [property.title, property.location, property.city, property.property_type]
+        .join(' ')
+        .toLowerCase()
+        .includes(term)
+    );
+  }, [properties, query]);
 
   useEffect(() => {
-    let active = true
+    let active = true;
 
     const load = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
         const [statsData, pendingData, usersData, propertiesData] = await Promise.all([
           fetchAdminStats(),
           fetchPendingBrokers(),
           fetchAdminUsers(),
           fetchProperties({ status: '' }),
-        ])
-        if (!active) return
-        setStats(statsData)
-        setPendingBrokers(pendingData)
-        setUsers(usersData)
-        setProperties(propertiesData)
+        ]);
+        if (!active) return;
+        setStats(statsData);
+        setPendingBrokers(pendingData);
+        setUsers(usersData);
+        setProperties(propertiesData);
       } catch (error) {
-        if (active) setToast(error.message)
+        if (active) setToast(error.message);
       } finally {
-        if (active) setLoading(false)
+        if (active) setLoading(false);
       }
-    }
+    };
 
-    load()
+    load();
     return () => {
-      active = false
-    }
-  }, [])
+      active = false;
+    };
+  }, []);
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/')
-  }
+    await logout();
+    navigate('/');
+  };
 
   const refresh = async () => {
     const [statsData, pendingData, usersData, propertiesData] = await Promise.all([
@@ -104,78 +107,78 @@ export default function AdminDashboard() {
       fetchPendingBrokers(),
       fetchAdminUsers(),
       fetchProperties({ status: '' }),
-    ])
-    setStats(statsData)
-    setPendingBrokers(pendingData)
-    setUsers(usersData)
-    setProperties(propertiesData)
-  }
+    ]);
+    setStats(statsData);
+    setPendingBrokers(pendingData);
+    setUsers(usersData);
+    setProperties(propertiesData);
+  };
 
   const handleApprove = async (brokerId) => {
-    setSaving(true)
+    setSaving(true);
     try {
-      await approveBroker(brokerId, user.id)
-      await refresh()
-      setToast('Broker approved and notified.')
+      await approveBroker(brokerId, user.id);
+      await refresh();
+      setToast('Broker approved and notified.');
     } catch (error) {
-      setToast(error.message)
+      setToast(error.message);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleReject = async (brokerId) => {
-    setSaving(true)
+    setSaving(true);
     try {
-      await rejectBroker(brokerId, user.id)
-      await refresh()
-      setToast('Broker rejected and notified.')
+      await rejectBroker(brokerId, user.id);
+      await refresh();
+      setToast('Broker rejected and notified.');
     } catch (error) {
-      setToast(error.message)
+      setToast(error.message);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleRoleChange = async (profileId, role) => {
-    setSaving(true)
+    setSaving(true);
     try {
-      await updateUserRole(profileId, role)
-      await refresh()
-      setToast('User role updated.')
+      await updateUserRole(profileId, role);
+      await refresh();
+      setToast('User role updated.');
     } catch (error) {
-      setToast(error.message)
+      setToast(error.message);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handlePropertyDelete = async (propertyId) => {
-    if (!window.confirm('Delete this property?')) return
-    setSaving(true)
+    if (!window.confirm('Delete this property?')) return;
+    setSaving(true);
     try {
-      await deleteProperty(propertyId)
-      await refresh()
-      setToast('Property deleted.')
+      await deleteProperty(propertyId);
+      await refresh();
+      setToast('Property deleted.');
     } catch (error) {
-      setToast(error.message)
+      setToast(error.message);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handlePropertyStatus = async (property, nextStatus) => {
-    setSaving(true)
+    setSaving(true);
     try {
-      await updateProperty(property.id, { ...property, status: nextStatus })
-      await refresh()
-      setToast('Property status updated.')
+      await updateProperty(property.id, { ...property, status: nextStatus });
+      await refresh();
+      setToast('Property status updated.');
     } catch (error) {
-      setToast(error.message)
+      setToast(error.message);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
@@ -217,9 +220,7 @@ export default function AdminDashboard() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="section-eyebrow">Operations</p>
-                <h1 className="mt-2 text-4xl font-extrabold text-[#1F2937]">
-                  Admin dashboard
-                </h1>
+                <h1 className="mt-2 text-4xl font-extrabold text-[#1F2937]">Admin dashboard</h1>
                 <p className="mt-2 text-[#6B7280]">
                   Manage users, properties, and broker approvals from one secure workspace.
                 </p>
@@ -233,6 +234,7 @@ export default function AdminDashboard() {
 
           {toast ? <Toast text={toast} onClose={() => setToast('')} /> : null}
 
+          {/* OVERVIEW TAB */}
           {tab === 'overview' ? (
             <div className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -241,166 +243,163 @@ export default function AdminDashboard() {
                 <Metric icon={MessageSquare} label="Enquiries" value={stats.enquiriesCount} />
                 <Metric icon={Clock3} label="Pending brokers" value={stats.brokerRequestsCount} />
               </div>
-              <section className="surface rounded-[28px] p-6">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-extrabold text-[#1F2937]">Pending brokers</h2>
-                    <p className="mt-1 text-sm text-[#6B7280]">Approve or reject new broker registrations.</p>
-                  </div>
-                  <button onClick={() => setTab('brokers')} className="btn-secondary rounded-2xl px-4 py-2.5 font-bold">
-                    Review all
-                  </button>
-                </div>
-                {loading ? (
-                  <div className="flex items-center justify-center py-20 text-[#6B7280]">
-                    <Loader2 className="mr-2 animate-spin" size={18} /> Loading...
-                  </div>
-                ) : pendingBrokers.length ? (
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {pendingBrokers.slice(0, 3).map((item) => (
-                      <PendingCard key={item.id} item={item} onApprove={handleApprove} onReject={handleReject} saving={saving} />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState title="No pending brokers" description="New broker registrations will appear here." />
-                )}
-              </section>
             </div>
           ) : null}
 
+          {/* BROKERS TAB */}
           {tab === 'brokers' ? (
-            <section className="surface rounded-[28px] p-6 sm:p-8">
-              <h2 className="text-2xl font-extrabold text-[#1F2937]">Broker approvals</h2>
-              <p className="mt-1 text-sm text-[#6B7280]">Approve or reject pending broker accounts.</p>
-              <div className="mt-6 space-y-4">
-                {loading ? (
-                  <div className="flex items-center justify-center py-20 text-[#6B7280]">
-                    <Loader2 className="mr-2 animate-spin" size={18} /> Loading brokers...
-                  </div>
-                ) : pendingBrokers.length ? (
-                  pendingBrokers.map((item) => (
-                    <PendingCard key={item.id} item={item} onApprove={handleApprove} onReject={handleReject} saving={saving} />
-                  ))
-                ) : (
-                  <EmptyState title="No pending brokers" description="Every approval request has already been processed." />
-                )}
-              </div>
-            </section>
+            <div className="space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-14 text-[#6B7280]">
+                  <Loader2 className="mr-2 animate-spin" size={18} /> Loading brokers...
+                </div>
+              ) : pendingBrokers.length === 0 ? (
+                <EmptyState
+                  title="No pending brokers"
+                  description="New broker requests will show up here for approval."
+                />
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {pendingBrokers.map((item) => (
+                    <PendingCard
+                      key={item.broker_id}
+                      item={item}
+                      onApprove={handleApprove}
+                      onReject={handleReject}
+                      saving={saving}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           ) : null}
 
+          {/* PROPERTIES TAB */}
           {tab === 'properties' ? (
-            <section className="surface rounded-[28px] p-6 sm:p-8">
-              <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <h2 className="text-2xl font-extrabold text-[#1F2937]">All properties</h2>
-                  <p className="mt-1 text-sm text-[#6B7280]">Search and moderate every listing on the platform.</p>
-                </div>
-                <div className="w-full max-w-md">
-                  <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#0F766E]" />
-                    <input className="input-field pl-10" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search properties" />
-                  </div>
-                </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3">
+                <Search size={18} className="text-[#6B7280]" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search by title, location, city, or type..."
+                  className="w-full border-none bg-transparent text-sm outline-none placeholder:text-[#9CA3AF]"
+                />
               </div>
+
               {loading ? (
-                <div className="flex items-center justify-center py-20 text-[#6B7280]">
+                <div className="flex items-center justify-center py-14 text-[#6B7280]">
                   <Loader2 className="mr-2 animate-spin" size={18} /> Loading properties...
                 </div>
-              ) : filteredProperties.length ? (
-                <div className="space-y-4">
+              ) : filteredProperties.length === 0 ? (
+                <EmptyState
+                  title="No properties found"
+                  description="Try a different search term, or check back once listings are added."
+                />
+              ) : (
+                <div className="space-y-3">
                   {filteredProperties.map((property) => (
-                    <div key={property.id} className="rounded-3xl border border-[#E5E7EB] bg-white p-5">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                          <div className="text-lg font-extrabold text-[#1F2937]">{property.title}</div>
-                          <div className="mt-1 text-sm text-[#6B7280]">{property.location}, {property.city}</div>
-                          <div className="mt-2 text-sm text-[#6B7280]">{property.property_type}</div>
+                    <div
+                      key={property.id}
+                      className="flex flex-col gap-3 rounded-[24px] border border-[#E5E7EB] bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <div className="font-extrabold text-[#1F2937]">{property.title}</div>
+                        <div className="mt-1 text-sm text-[#6B7280]">
+                          {property.location}, {property.city} &middot; {property.property_type}
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge>{property.status}</Badge>
-                          <Badge>{formatPrice(property.price)}</Badge>
+                        <div className="mt-1 text-sm font-bold text-[#0F766E]">{formatPrice(property.price)}</div>
+                        <div className="mt-2">
+                          <StatusPill>{property.status}</StatusPill>
                         </div>
                       </div>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {['active', 'draft', 'pending', 'sold', 'rented', 'archived'].map((status) => (
+                      <div className="flex flex-wrap gap-2">
+                        {property.status !== 'approved' ? (
                           <button
-                            key={status}
-                            onClick={() => handlePropertyStatus(property, status)}
-                            className="rounded-2xl bg-[#F8F8F7] px-3 py-2 text-xs font-bold text-[#1F2937]"
+                            disabled={saving}
+                            onClick={() => handlePropertyStatus(property, 'approved')}
+                            className="rounded-2xl bg-[#0F766E] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
                           >
-                            {status}
+                            Approve
                           </button>
-                        ))}
-                        <button onClick={() => handlePropertyDelete(property.id)} className="rounded-2xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600">
-                          <Trash2 size={14} className="mr-1 inline-block" />
-                          Delete
+                        ) : null}
+                        {property.status !== 'rejected' ? (
+                          <button
+                            disabled={saving}
+                            onClick={() => handlePropertyStatus(property, 'rejected')}
+                            className="rounded-2xl bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-600 disabled:opacity-60"
+                          >
+                            Reject
+                          </button>
+                        ) : null}
+                        <button
+                          disabled={saving}
+                          onClick={() => handlePropertyDelete(property.id)}
+                          className="flex items-center gap-2 rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600 disabled:opacity-60"
+                        >
+                          <Trash2 size={15} /> Delete
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <EmptyState title="No properties found" description="Try a different search term or refresh the data." />
               )}
-            </section>
+            </div>
           ) : null}
 
+          {/* USERS TAB */}
           {tab === 'users' ? (
-            <section className="surface rounded-[28px] p-6 sm:p-8">
-              <h2 className="text-2xl font-extrabold text-[#1F2937]">User management</h2>
-              <p className="mt-1 text-sm text-[#6B7280]">Change roles and monitor account status.</p>
-              <div className="mt-6 overflow-x-auto">
-                {loading ? (
-                  <div className="flex items-center justify-center py-20 text-[#6B7280]">
-                    <Loader2 className="mr-2 animate-spin" size={18} /> Loading users...
-                  </div>
-                ) : (
-                  <table className="w-full min-w-[860px] text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-[#E5E7EB] text-[#6B7280]">
-                        <th className="py-3">User</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Approval</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E5E7EB]">
-                      {users.map((profile) => (
-                        <tr key={profile.id}>
-                          <td className="py-4">
-                            <div className="font-bold text-[#1F2937]">{profile.full_name}</div>
-                            <div className="text-xs text-[#6B7280]">{profile.city || 'No city set'}</div>
-                          </td>
-                          <td>{profile.email}</td>
-                          <td>
-                            <select
-                              value={profile.role}
-                              disabled={profile.id === user.id}
-                              onChange={(event) => handleRoleChange(profile.id, event.target.value)}
-                              className="rounded-2xl border border-[#E5E7EB] bg-white px-3 py-2 text-sm"
-                            >
-                              {['customer', 'broker', 'admin'].map((role) => <option key={role} value={role}>{role}</option>)}
-                            </select>
-                          </td>
-                          <td>
-                            <StatusPill>{profile.brokerApproval?.status || 'n/a'}</StatusPill>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            </section>
+            <div className="space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-14 text-[#6B7280]">
+                  <Loader2 className="mr-2 animate-spin" size={18} /> Loading users...
+                </div>
+              ) : users.length === 0 ? (
+                <EmptyState title="No users yet" description="Registered users will appear here." />
+              ) : (
+                <div className="space-y-3">
+                  {users.map((person) => (
+                    <div
+                      key={person.id}
+                      className="flex flex-col gap-3 rounded-[24px] border border-[#E5E7EB] bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <div className="font-extrabold text-[#1F2937]">{person.full_name || 'Unnamed user'}</div>
+                        <div className="mt-1 text-sm text-[#6B7280]">{person.email}</div>
+                        <div className="mt-2">
+                          <Badge>{person.role || 'customer'}</Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <UserCog size={16} className="text-[#6B7280]" />
+                        <select
+                          disabled={saving}
+                          value={person.role || 'customer'}
+                          onChange={(e) => handleRoleChange(person.id, e.target.value)}
+                          className="rounded-2xl border border-[#E5E7EB] px-3 py-2 text-sm font-bold text-[#1F2937] disabled:opacity-60"
+                        >
+                          <option value="customer">Customer</option>
+                          <option value="broker">Broker</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : null}
 
+          {/* PROFILE TAB */}
           {tab === 'profile' ? (
-            <ProfileEditor title="Admin profile" subtitle="Keep your admin account details current." />
+            <div className="space-y-4">
+              <ProfileEditor />
+            </div>
           ) : null}
         </div>
       </main>
     </div>
-  )
+  );
 }
 
 function Metric({ icon: Icon, label, value }) {
@@ -410,7 +409,7 @@ function Metric({ icon: Icon, label, value }) {
       <div className="text-3xl font-extrabold text-[#1F2937]">{value}</div>
       <div className="mt-1 text-sm text-[#6B7280]">{label}</div>
     </div>
-  )
+  );
 }
 
 function PendingCard({ item, onApprove, onReject, saving }) {
@@ -424,23 +423,31 @@ function PendingCard({ item, onApprove, onReject, saving }) {
         <Badge>{item.profile?.role || 'broker'}</Badge>
       </div>
       <div className="mt-4 flex gap-2">
-        <button disabled={saving} onClick={() => onApprove(item.broker_id)} className="rounded-2xl bg-[#0F766E] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60">
+        <button
+          disabled={saving}
+          onClick={() => onApprove(item.broker_id)}
+          className="rounded-2xl bg-[#0F766E] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+        >
           Approve
         </button>
-        <button disabled={saving} onClick={() => onReject(item.broker_id)} className="rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600 disabled:opacity-60">
+        <button
+          disabled={saving}
+          onClick={() => onReject(item.broker_id)}
+          className="rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600 disabled:opacity-60"
+        >
           Reject
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 function StatusPill({ children }) {
-  return <span className="rounded-full bg-[#F0FAF8] px-3 py-1 text-xs font-bold text-[#0F766E]">{children}</span>
+  return <span className="rounded-full bg-[#F0FAF8] px-3 py-1 text-xs font-bold text-[#0F766E]">{children}</span>;
 }
 
 function Badge({ children }) {
-  return <span className="rounded-full bg-[#F8F8F7] px-3 py-1 text-xs font-bold text-[#6B7280]">{children}</span>
+  return <span className="rounded-full bg-[#F8F8F7] px-3 py-1 text-xs font-bold text-[#6B7280]">{children}</span>;
 }
 
 function EmptyState({ title, description }) {
@@ -452,7 +459,7 @@ function EmptyState({ title, description }) {
       <div className="mt-4 text-lg font-extrabold text-[#1F2937]">{title}</div>
       <p className="mt-2 text-sm text-[#6B7280]">{description}</p>
     </div>
-  )
+  );
 }
 
 function Toast({ text, onClose }) {
@@ -461,5 +468,5 @@ function Toast({ text, onClose }) {
       {text}
       <button onClick={onClose} className="ml-4 text-white/70 hover:text-white">x</button>
     </div>
-  )
+  );
 }

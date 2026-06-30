@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-
   Heart,
   Home,
   LogOut,
@@ -14,40 +13,117 @@ import {
   MessageSquare,
   Filter,
   Loader2,
-} from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext.jsx'
-import ProfileEditor from '../components/ProfileEditor.jsx'
+  Bell,
+  Camera,
+  Lock,
+  Trash2,
+  CheckCircle,
+  AlertCircle,
+  ChevronRight,
+  Phone,
+  Mail,
+  Shield,
+  Download,
+  X,
+} from 'lucide-react';
+
+import { useAuth } from '../contexts/AuthContext.jsx';
+import ProfileEditor from '../components/ProfileEditor.jsx';
 import {
   fetchCustomerEnquiries,
   fetchFavorites,
   fetchProperties,
   toggleFavorite,
-} from '../services/api.jsx'
-
-  Bell, Eye, Heart, Home, LogOut, MapPin, Sparkles, User,
-  Camera, Lock, Trash2, CheckCircle, AlertCircle, ChevronRight,
-  Phone, Mail, Shield, Bell as BellIcon, Download, X
-} from 'lucide-react'
-import { properties } from '../data/properties.js'
-
+} from '../services/api.jsx';
 
 function formatPrice(value) {
-  if (!value) return 'On request'
-  if (typeof value === 'string') return value  // already formatted text
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value))
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0));
 }
 
 // ─── Toast ───────────────────────────────────────────────────────────────────
 function Toast({ message, type, onClose }) {
-  if (!message) return null
+  if (!message) return null;
   return (
     <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl px-5 py-4 shadow-xl text-sm font-bold transition-all
       ${type === 'success' ? 'bg-[#0F766E] text-white' : 'bg-red-500 text-white'}`}>
       {type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
       {message}
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><X size={14} /></button>
+      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100">
+        <X size={14} />
+      </button>
     </div>
-  )
+  );
+}
+
+// ─── Shared bits ─────────────────────────────────────────────────────────────
+function Badge({ children }) {
+  return <span className="rounded-full bg-[#F8F8F7] px-3 py-1 text-xs font-bold text-[#6B7280]">{children}</span>;
+}
+
+function EmptyState({ icon: Icon = Home, title, description }) {
+  return (
+    <div className="rounded-[24px] border border-dashed border-[#E5E7EB] bg-white px-6 py-14 text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F0FAF8] text-[#0F766E]">
+        <Icon size={20} />
+      </div>
+      <div className="mt-4 text-lg font-extrabold text-[#1F2937]">{title}</div>
+      <p className="mt-2 text-sm text-[#6B7280]">{description}</p>
+    </div>
+  );
+}
+
+function Field({ label, error, children }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-bold text-[#1F2937]">{label}</label>
+      {children}
+      {error ? <p className="mt-1 text-xs font-bold text-red-500">{error}</p> : null}
+    </div>
+  );
+}
+
+const inputClass =
+  'w-full rounded-2xl border border-[#E5E7EB] px-4 py-2.5 text-sm text-[#1F2937] outline-none focus:border-[#0F766E]';
+
+// ─── Property Card ────────────────────────────────────────────────────────────
+function PropertyCard({ property, isFavorite, onToggleFavorite, saving }) {
+  return (
+    <div className="group overflow-hidden rounded-[24px] border border-[#E5E7EB] bg-white transition hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+      <div className="relative h-44 w-full overflow-hidden bg-[#F0FAF8]">
+        {property.image_url ? (
+          <img src={property.image_url} alt={property.title} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-[#0F766E]">
+            <Building2 size={36} />
+          </div>
+        )}
+        <button
+          disabled={saving}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleFavorite(property.id);
+          }}
+          className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full shadow-md transition disabled:opacity-60 ${
+            isFavorite ? 'bg-rose-500 text-white' : 'bg-white text-[#6B7280] hover:text-rose-500'
+          }`}
+        >
+          <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+        </button>
+      </div>
+      <Link to={`/property/${property.id}`} className="block p-5">
+        <div className="font-extrabold text-[#1F2937]">{property.title}</div>
+        <div className="mt-1 flex items-center gap-1 text-sm text-[#6B7280]">
+          <MapPin size={13} />
+          {property.location}, {property.city}
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+          <div className="text-sm font-bold text-[#0F766E]">{formatPrice(property.price)}</div>
+          <Badge>{property.property_type}</Badge>
+        </div>
+      </Link>
+    </div>
+  );
 }
 
 // ─── Avatar Upload ────────────────────────────────────────────────────────────
@@ -55,40 +131,47 @@ function AvatarUpload({ initials, avatarUrl, onChange }) {
   return (
     <div className="relative inline-block">
       <div className="h-24 w-24 rounded-full bg-[#F0FAF8] border-4 border-white shadow-lg overflow-hidden flex items-center justify-center">
-        {avatarUrl
-          ? <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
-          : <span className="text-3xl font-extrabold text-[#0F766E]">{initials}</span>}
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="Profile" className="h-full w-full object-cover" />
+        ) : (
+          <span className="text-3xl font-extrabold text-[#0F766E]">{initials}</span>
+        )}
       </div>
       <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-[#0F766E] text-white shadow-md hover:bg-[#134E4A] transition-colors">
         <Camera size={14} />
-        <input type="file" accept="image/*" className="sr-only" onChange={e => {
-          const file = e.target.files[0]
-          if (file) onChange(URL.createObjectURL(file))
-        }} />
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) onChange(URL.createObjectURL(file));
+          }}
+        />
       </label>
     </div>
-  )
+  );
 }
 
 // ─── Profile Tab ──────────────────────────────────────────────────────────────
-function ProfileTab({ showToast }) {
-  const [activeSection, setActiveSection] = useState('personal')
-  const [avatarUrl, setAvatarUrl] = useState('')
-  const [saving, setSaving] = useState(false)
+function ProfileTab({ showToast, user }) {
+  const [activeSection, setActiveSection] = useState('personal');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Personal Info
   const [personal, setPersonal] = useState({
-    fullName: 'Rahul Kumar',
-    email: 'rahul@alayaa.in',
-    phone: '+91 98765 43210',
-    city: 'Chennai',
-    bio: '',
-  })
-  const [personalErrors, setPersonalErrors] = useState({})
+    fullName: user?.profile?.full_name || 'Rahul Kumar',
+    email: user?.email || user?.profile?.email || 'rahul@alayaa.in',
+    phone: user?.profile?.phone || '+91 98765 43210',
+    city: user?.profile?.city || 'Chennai',
+    bio: user?.profile?.bio || '',
+  });
+  const [personalErrors, setPersonalErrors] = useState({});
 
   // Password
-  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' })
-  const [pwErrors, setPwErrors] = useState({})
+  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+  const [pwErrors, setPwErrors] = useState({});
 
   // Notifications
   const [notifications, setNotifications] = useState({
@@ -98,78 +181,88 @@ function ProfileTab({ showToast }) {
     brokerMessages: false,
     weeklyDigest: true,
     smsAlerts: false,
-  })
+  });
 
   // Danger zone
-  const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState('');
 
-  function validatePersonal() {
-    const errs = {}
-    if (!personal.fullName.trim()) errs.fullName = 'Name is required'
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personal.email)) errs.email = 'Enter a valid email'
-    if (personal.phone && !/^\+?\d[\d\s-]{7,}$/.test(personal.phone)) errs.phone = 'Enter a valid phone number'
-    return errs
-  }
+  const validatePersonal = () => {
+    const errs = {};
+    if (!personal.fullName.trim()) errs.fullName = 'Name is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personal.email)) errs.email = 'Enter a valid email';
+    if (personal.phone && !/^\+?\d[\d\s-]{7,}$/.test(personal.phone)) errs.phone = 'Enter a valid phone number';
+    return errs;
+  };
 
-  function validatePasswords() {
-    const errs = {}
-    if (!passwords.current) errs.current = 'Current password is required'
-    if (passwords.next.length < 8) errs.next = 'Password must be at least 8 characters'
-    if (passwords.next !== passwords.confirm) errs.confirm = 'Passwords do not match'
-    return errs
-  }
+  const validatePasswords = () => {
+    const errs = {};
+    if (!passwords.current) errs.current = 'Current password is required';
+    if (passwords.next.length < 8) errs.next = 'Password must be at least 8 characters';
+    if (passwords.next !== passwords.confirm) errs.confirm = 'Passwords do not match';
+    return errs;
+  };
 
-  async function handlePersonalSave(e) {
-    e.preventDefault()
-    const errs = validatePersonal()
-    if (Object.keys(errs).length) { setPersonalErrors(errs); return }
-    setPersonalErrors({})
-    setSaving(true)
-    await new Promise(r => setTimeout(r, 800))
-    setSaving(false)
-    showToast('Profile updated successfully', 'success')
-  }
+  const handlePersonalSave = async (e) => {
+    e.preventDefault();
+    const errs = validatePersonal();
+    if (Object.keys(errs).length) {
+      setPersonalErrors(errs);
+      return;
+    }
+    setPersonalErrors({});
+    setSaving(true);
+    await new Promise((r) => setTimeout(r, 800));
+    setSaving(false);
+    showToast('Profile updated successfully', 'success');
+  };
 
-  async function handlePasswordChange(e) {
-    e.preventDefault()
-    const errs = validatePasswords()
-    if (Object.keys(errs).length) { setPwErrors(errs); return }
-    setPwErrors({})
-    setSaving(true)
-    await new Promise(r => setTimeout(r, 800))
-    setSaving(false)
-    setPasswords({ current: '', next: '', confirm: '' })
-    showToast('Password changed successfully', 'success')
-  }
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    const errs = validatePasswords();
+    if (Object.keys(errs).length) {
+      setPwErrors(errs);
+      return;
+    }
+    setPwErrors({});
+    setSaving(true);
+    await new Promise((r) => setTimeout(r, 800));
+    setSaving(false);
+    setPasswords({ current: '', next: '', confirm: '' });
+    showToast('Password changed successfully', 'success');
+  };
 
-  async function handleNotificationsSave() {
-    setSaving(true)
-    await new Promise(r => setTimeout(r, 600))
-    setSaving(false)
-    showToast('Notification preferences saved', 'success')
-  }
+  const handleNotificationsSave = async () => {
+    setSaving(true);
+    await new Promise((r) => setTimeout(r, 600));
+    setSaving(false);
+    showToast('Notification preferences saved', 'success');
+  };
 
-  function handleDeleteAccount() {
-    if (deleteConfirm !== 'DELETE') return
-    showToast('Account deletion requested. You will receive an email.', 'success')
-    setDeleteConfirm('')
-  }
+  const handleDeleteAccount = () => {
+    if (deleteConfirm !== 'DELETE') return;
+    showToast('Account deletion requested. You will receive an email.', 'success');
+    setDeleteConfirm('');
+  };
 
   const sections = [
     { id: 'personal', label: 'Personal Info', icon: User },
     { id: 'security', label: 'Password & Security', icon: Lock },
-    { id: 'notifications', label: 'Notifications', icon: BellIcon },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'danger', label: 'Danger Zone', icon: Trash2 },
-  ]
+  ];
 
-  const initials = personal.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+  const initials = personal.fullName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
       {/* Left sidebar navigation */}
       <div className="lg:w-56 shrink-0">
         <div className="surface rounded-3xl p-2">
-          {/* Avatar summary */}
           <div className="flex flex-col items-center gap-2 px-4 py-5 border-b border-[#E5E7EB] mb-2">
             <AvatarUpload initials={initials} avatarUrl={avatarUrl} onChange={setAvatarUrl} />
             <div className="text-center mt-1">
@@ -177,6 +270,7 @@ function ProfileTab({ showToast }) {
               <div className="text-xs text-[#6B7280] mt-0.5">{personal.city || 'No city set'}</div>
             </div>
           </div>
+
           <nav className="space-y-0.5">
             {sections.map(({ id, label, icon: Icon }) => (
               <button
@@ -184,8 +278,12 @@ function ProfileTab({ showToast }) {
                 onClick={() => setActiveSection(id)}
                 className={`flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-bold transition
                   ${activeSection === id
-                    ? id === 'danger' ? 'bg-red-50 text-red-600' : 'bg-[#F0FAF8] text-[#0F766E]'
-                    : id === 'danger' ? 'text-red-500 hover:bg-red-50' : 'text-[#6B7280] hover:bg-[#F8F8F7] hover:text-[#1F2937]'}`}
+                    ? id === 'danger'
+                      ? 'bg-red-50 text-red-600'
+                      : 'bg-[#F0FAF8] text-[#0F766E]'
+                    : id === 'danger'
+                    ? 'text-red-500 hover:bg-red-50'
+                    : 'text-[#6B7280] hover:bg-[#F8F8F7] hover:text-[#1F2937]'}`}
               >
                 <Icon size={16} />
                 <span className="flex-1 text-left">{label}</span>
@@ -198,8 +296,7 @@ function ProfileTab({ showToast }) {
 
       {/* Right content panel */}
       <div className="flex-1 min-w-0">
-
-        {/* ── Personal Info ── */}
+        {/* Personal Info */}
         {activeSection === 'personal' && (
           <div className="surface rounded-3xl p-8 animate-fade-in-up">
             <div className="mb-6">
@@ -208,7 +305,6 @@ function ProfileTab({ showToast }) {
               <p className="mt-1 text-sm text-[#6B7280]">Update your name, contact details, and how you appear on ALAYAA.</p>
             </div>
 
-            {/* Profile photo row */}
             <div className="mb-8 flex items-center gap-5 rounded-2xl bg-[#F8F8F7] p-5">
               <AvatarUpload initials={initials} avatarUrl={avatarUrl} onChange={setAvatarUrl} />
               <div>
@@ -218,406 +314,307 @@ function ProfileTab({ showToast }) {
                   <button
                     onClick={() => setAvatarUrl('')}
                     className="mt-2 text-xs font-bold text-red-500 hover:text-red-600"
-                  >Remove photo</button>
+                  >
+                    Remove photo
+                  </button>
                 )}
               </div>
             </div>
 
             <form onSubmit={handlePersonalSave} noValidate>
               <div className="grid gap-5 sm:grid-cols-2">
-                <Field label="Full name" error={personalErrors.fullName} required>
+                <Field label="Full name" error={personalErrors.fullName}>
                   <input
-                    className={`input-field ${personalErrors.fullName ? 'border-red-400' : ''}`}
+                    className={inputClass}
                     value={personal.fullName}
-                    onChange={e => setPersonal(p => ({ ...p, fullName: e.target.value }))}
-                    placeholder="Your full name"
+                    onChange={(e) => setPersonal({ ...personal, fullName: e.target.value })}
                   />
                 </Field>
-
-                <Field label="Email address" error={personalErrors.email} required>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7280]" />
-                    <input
-                      type="email"
-                      className={`input-field pl-9 ${personalErrors.email ? 'border-red-400' : ''}`}
-                      value={personal.email}
-                      onChange={e => setPersonal(p => ({ ...p, email: e.target.value }))}
-                      placeholder="you@example.com"
-                    />
-                  </div>
+                <Field label="Email" error={personalErrors.email}>
+                  <input
+                    type="email"
+                    className={inputClass}
+                    value={personal.email}
+                    onChange={(e) => setPersonal({ ...personal, email: e.target.value })}
+                  />
                 </Field>
-
-                <Field label="Phone number" error={personalErrors.phone}>
-                  <div className="relative">
-                    <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7280]" />
-                    <input
-                      className={`input-field pl-9 ${personalErrors.phone ? 'border-red-400' : ''}`}
-                      value={personal.phone}
-                      onChange={e => setPersonal(p => ({ ...p, phone: e.target.value }))}
-                      placeholder="+91 99999 00000"
-                    />
-                  </div>
+                <Field label="Phone" error={personalErrors.phone}>
+                  <input
+                    className={inputClass}
+                    value={personal.phone}
+                    onChange={(e) => setPersonal({ ...personal, phone: e.target.value })}
+                  />
                 </Field>
-
                 <Field label="City">
-                  <select
-                    className="input-field"
+                  <input
+                    className={inputClass}
                     value={personal.city}
-                    onChange={e => setPersonal(p => ({ ...p, city: e.target.value }))}
-                  >
-                    <option value="">Select city</option>
-                    {['Chennai', 'Coimbatore', 'Madurai', 'Trichy', 'Salem', 'Tirunelveli', 'Vellore'].map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                    onChange={(e) => setPersonal({ ...personal, city: e.target.value })}
+                  />
                 </Field>
-
                 <div className="sm:col-span-2">
-                  <Field label="Short bio" hint="Shown to brokers when you make an inquiry">
+                  <Field label="Bio">
                     <textarea
-                      className="input-field resize-none"
                       rows={3}
+                      className={inputClass}
+                      placeholder="Tell brokers a little about what you're looking for..."
                       value={personal.bio}
-                      onChange={e => setPersonal(p => ({ ...p, bio: e.target.value }))}
-                      placeholder="Tell brokers a bit about yourself and what you're looking for…"
-                      maxLength={300}
+                      onChange={(e) => setPersonal({ ...personal, bio: e.target.value })}
                     />
-                    <div className="mt-1 text-right text-xs text-[#6B7280]">{personal.bio.length}/300</div>
                   </Field>
                 </div>
               </div>
-
               <div className="mt-6 flex items-center gap-3">
-                <button type="submit" disabled={saving} className="btn-primary rounded-2xl px-7 py-3 font-bold text-sm disabled:opacity-60">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="btn-primary rounded-2xl px-7 py-3 font-bold text-sm disabled:opacity-60"
+                >
                   {saving ? 'Saving…' : 'Save changes'}
                 </button>
-                <button type="button" className="btn-secondary rounded-2xl px-5 py-3 font-bold text-sm">Cancel</button>
+                <button type="button" className="btn-secondary rounded-2xl px-5 py-3 font-bold text-sm">
+                  Cancel
+                </button>
               </div>
             </form>
           </div>
         )}
 
-        {/* ── Password & Security ── */}
+        {/* Password & Security */}
         {activeSection === 'security' && (
-          <div className="space-y-5 animate-fade-in-up">
-            <div className="surface rounded-3xl p-8">
-              <div className="mb-6">
-                <p className="section-eyebrow">Security</p>
-                <h2 className="mt-1 text-2xl font-extrabold text-[#1F2937]">Change Password</h2>
-                <p className="mt-1 text-sm text-[#6B7280]">Use a strong, unique password to keep your account safe.</p>
-              </div>
-
-              <form onSubmit={handlePasswordChange} noValidate className="max-w-md space-y-4">
-                <Field label="Current password" error={pwErrors.current} required>
-                  <input
-                    type="password"
-                    className={`input-field ${pwErrors.current ? 'border-red-400' : ''}`}
-                    value={passwords.current}
-                    onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))}
-                    placeholder="••••••••"
-                  />
-                </Field>
-                <Field label="New password" error={pwErrors.next} required hint="At least 8 characters">
-                  <input
-                    type="password"
-                    className={`input-field ${pwErrors.next ? 'border-red-400' : ''}`}
-                    value={passwords.next}
-                    onChange={e => setPasswords(p => ({ ...p, next: e.target.value }))}
-                    placeholder="••••••••"
-                  />
-                  {passwords.next && (
-                    <PasswordStrength password={passwords.next} />
-                  )}
-                </Field>
-                <Field label="Confirm new password" error={pwErrors.confirm} required>
-                  <input
-                    type="password"
-                    className={`input-field ${pwErrors.confirm ? 'border-red-400' : ''}`}
-                    value={passwords.confirm}
-                    onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))}
-                    placeholder="••••••••"
-                  />
-                </Field>
-                <button type="submit" disabled={saving} className="btn-primary rounded-2xl px-7 py-3 font-bold text-sm mt-2 disabled:opacity-60">
-                  {saving ? 'Updating…' : 'Update password'}
-                </button>
-              </form>
+          <div className="surface rounded-3xl p-8 animate-fade-in-up">
+            <div className="mb-6">
+              <p className="section-eyebrow">Security</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-[#1F2937]">Password & Security</h2>
+              <p className="mt-1 text-sm text-[#6B7280]">Keep your account secure with a strong password.</p>
             </div>
 
-            {/* Active Sessions */}
-            <div className="surface rounded-3xl p-8">
-              <div className="mb-5">
-                <div className="flex items-center gap-2">
-                  <Shield size={18} className="text-[#0F766E]" />
-                  <h3 className="text-lg font-extrabold text-[#1F2937]">Active Sessions</h3>
-                </div>
-                <p className="mt-1 text-sm text-[#6B7280]">Devices where you are currently logged in.</p>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { device: 'Chrome on MacOS', location: 'Chennai, TN', time: 'Now (current)', active: true },
-                  { device: 'Mobile App · iOS', location: 'Chennai, TN', time: '2 hours ago', active: false },
-                ].map((s, i) => (
-                  <div key={i} className={`flex items-center justify-between rounded-2xl p-4 ${s.active ? 'bg-[#F0FAF8] border border-[#0F766E]/20' : 'bg-[#F8F8F7]'}`}>
-                    <div>
-                      <div className="font-bold text-sm text-[#1F2937]">{s.device}</div>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-[#6B7280]">
-                        <MapPin size={11} /> {s.location} · {s.time}
-                      </div>
-                    </div>
-                    {s.active
-                      ? <span className="rounded-full bg-[#0F766E] px-3 py-1 text-xs font-bold text-white">This device</span>
-                      : <button className="text-xs font-bold text-red-500 hover:text-red-600">Sign out</button>
-                    }
-                  </div>
-                ))}
-              </div>
+            <form onSubmit={handlePasswordChange} noValidate className="max-w-md space-y-5">
+              <Field label="Current password" error={pwErrors.current}>
+                <input
+                  type="password"
+                  className={inputClass}
+                  value={passwords.current}
+                  onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                />
+              </Field>
+              <Field label="New password" error={pwErrors.next}>
+                <input
+                  type="password"
+                  className={inputClass}
+                  value={passwords.next}
+                  onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
+                />
+              </Field>
+              <Field label="Confirm new password" error={pwErrors.confirm}>
+                <input
+                  type="password"
+                  className={inputClass}
+                  value={passwords.confirm}
+                  onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                />
+              </Field>
+              <button
+                type="submit"
+                disabled={saving}
+                className="btn-primary rounded-2xl px-7 py-3 font-bold text-sm disabled:opacity-60"
+              >
+                {saving ? 'Updating…' : 'Update password'}
+              </button>
+            </form>
+
+            <div className="mt-8 flex items-center gap-3 rounded-2xl bg-[#F0FAF8] p-5 text-sm text-[#134E4A]">
+              <Shield size={18} />
+              We recommend using a unique password you don't use anywhere else.
             </div>
           </div>
         )}
 
-        {/* ── Notifications ── */}
+        {/* Notifications */}
         {activeSection === 'notifications' && (
           <div className="surface rounded-3xl p-8 animate-fade-in-up">
             <div className="mb-6">
               <p className="section-eyebrow">Preferences</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-[#1F2937]">Notification Settings</h2>
-              <p className="mt-1 text-sm text-[#6B7280]">Choose what updates you want to receive from ALAYAA.</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-[#1F2937]">Notifications</h2>
+              <p className="mt-1 text-sm text-[#6B7280]">Choose what you'd like to hear from us about.</p>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-3">
               {[
-                { key: 'newListings', label: 'New property listings', desc: 'When new properties matching your saved searches are listed' },
-                { key: 'priceDrops', label: 'Price drops', desc: 'When prices change on properties you have saved or viewed' },
-                { key: 'inquiryUpdates', label: 'Inquiry status updates', desc: 'When a broker responds to or updates your inquiries' },
-                { key: 'brokerMessages', label: 'Broker messages', desc: 'Direct messages from brokers about your inquiries' },
-                { key: 'weeklyDigest', label: 'Weekly market digest', desc: 'A weekly summary of Tamil Nadu property market trends' },
-                { key: 'smsAlerts', label: 'SMS alerts', desc: 'Critical alerts sent to your registered phone number' },
-              ].map(({ key, label, desc }) => (
-                <div key={key} className="flex items-start justify-between rounded-2xl p-4 hover:bg-[#F8F8F7] transition-colors">
-                  <div className="pr-6">
-                    <div className="font-bold text-sm text-[#1F2937]">{label}</div>
-                    <div className="mt-0.5 text-xs text-[#6B7280]">{desc}</div>
+                ['newListings', 'New listings matching your search', Home],
+                ['priceDrops', 'Price drops on saved properties', Sparkles],
+                ['inquiryUpdates', 'Updates on your enquiries', MessageSquare],
+                ['brokerMessages', 'Messages from brokers', Mail],
+                ['weeklyDigest', 'Weekly digest email', Bell],
+                ['smsAlerts', 'SMS alerts', Phone],
+              ].map(([key, label, Icon]) => (
+                <label
+                  key={key}
+                  className="flex items-center justify-between rounded-2xl border border-[#E5E7EB] px-5 py-4 cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon size={16} className="text-[#0F766E]" />
+                    <span className="text-sm font-bold text-[#1F2937]">{label}</span>
                   </div>
-                  <button
-                    role="switch"
-                    aria-checked={notifications[key]}
-                    onClick={() => setNotifications(n => ({ ...n, [key]: !n[key] }))}
-                    className={`relative shrink-0 h-6 w-11 rounded-full transition-colors ${notifications[key] ? 'bg-[#0F766E]' : 'bg-[#E5E7EB]'}`}
-                  >
-                    <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${notifications[key] ? 'translate-x-5' : 'translate-x-0'}`} />
-                  </button>
-                </div>
+                  <input
+                    type="checkbox"
+                    checked={notifications[key]}
+                    onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })}
+                    className="h-5 w-5 accent-[#0F766E]"
+                  />
+                </label>
               ))}
             </div>
 
-            <div className="mt-6 pt-5 border-t border-[#E5E7EB]">
-              <button onClick={handleNotificationsSave} disabled={saving} className="btn-primary rounded-2xl px-7 py-3 font-bold text-sm disabled:opacity-60">
-                {saving ? 'Saving…' : 'Save preferences'}
+            <button
+              onClick={handleNotificationsSave}
+              disabled={saving}
+              className="btn-primary mt-6 rounded-2xl px-7 py-3 font-bold text-sm disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save preferences'}
+            </button>
+          </div>
+        )}
+
+        {/* Danger Zone */}
+        {activeSection === 'danger' && (
+          <div className="surface rounded-3xl p-8 animate-fade-in-up">
+            <div className="mb-6">
+              <p className="section-eyebrow text-red-500">Danger zone</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-[#1F2937]">Delete account</h2>
+              <p className="mt-1 text-sm text-[#6B7280]">
+                This will permanently delete your account, saved properties, and enquiry history. This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+              <div className="flex items-center gap-2 text-sm font-bold text-red-600">
+                <AlertCircle size={16} /> Type DELETE to confirm
+              </div>
+              <input
+                className="mt-3 w-full rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm outline-none"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                placeholder="DELETE"
+              />
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirm !== 'DELETE'}
+                className="mt-4 flex items-center gap-2 rounded-2xl bg-red-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-40"
+              >
+                <Trash2 size={15} /> Delete my account
               </button>
             </div>
           </div>
         )}
-        {/* ── Danger Zone ── */}
-        {activeSection === 'danger' && (
-          <div className="surface rounded-3xl p-8 animate-fade-in-up border-red-100">
-            <div className="mb-6">
-              <p className="text-xs font-bold uppercase tracking-widest text-red-500">Irreversible actions</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-[#1F2937]">Danger Zone</h2>
-              <p className="mt-1 text-sm text-[#6B7280]">These actions cannot be undone. Please proceed carefully.</p>
-            </div>
-
-            <div className="space-y-4 max-w-lg">
-              {/* Deactivate */}
-              <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5">
-                <div className="mb-3">
-                  <div className="font-bold text-[#1F2937]">Deactivate account</div>
-                  <div className="mt-0.5 text-sm text-[#6B7280]">Temporarily hides your profile and pauses all notifications. You can reactivate any time.</div>
-                </div>
-                <button className="rounded-xl border border-orange-300 bg-white px-4 py-2.5 text-sm font-bold text-orange-600 hover:bg-orange-50 transition-colors">
-                  Deactivate my account
-                </button>
-              </div>
-
-              {/* Delete */}
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
-                <div className="mb-3">
-                  <div className="font-bold text-[#1F2937]">Delete account permanently</div>
-                  <div className="mt-0.5 text-sm text-[#6B7280]">Permanently removes your account, all saved properties, and inquiry history. This cannot be reversed.</div>
-                </div>
-                <div className="mt-3">
-                  <label className="mb-2 block text-xs font-bold text-red-600">
-                    Type <span className="font-mono bg-red-100 px-1.5 py-0.5 rounded">DELETE</span> to confirm
-                  </label>
-                  <div className="flex gap-3">
-                    <input
-                      className="input-field border-red-300 focus:border-red-500 focus:shadow-none text-sm"
-                      placeholder="DELETE"
-                      value={deleteConfirm}
-                      onChange={e => setDeleteConfirm(e.target.value)}
-                    />
-                    <button
-                      disabled={deleteConfirm !== 'DELETE'}
-                      onClick={handleDeleteAccount}
-                      className="shrink-0 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
       </div>
     </div>
-  )
+  );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function Field({ label, children, error, hint, required }) {
-  return (
-    <div>
-      <label className="mb-1.5 flex items-center gap-1 text-sm font-bold text-[#1F2937]">
-        {label}
-        {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
-      {hint && !error && <p className="mt-1 text-xs text-[#6B7280]">{hint}</p>}
-      {error && <p className="mt-1 text-xs font-medium text-red-500 flex items-center gap-1"><AlertCircle size={11} />{error}</p>}
-    </div>
-  )
-}
-
-function PasswordStrength({ password }) {
-  const score = [
-    password.length >= 8,
-    /[A-Z]/.test(password),
-    /[0-9]/.test(password),
-    /[^A-Za-z0-9]/.test(password),
-  ].filter(Boolean).length
-
-  const labels = ['Weak', 'Fair', 'Good', 'Strong']
-  const colors = ['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-[#0F766E]']
-
-  return (
-    <div className="mt-2">
-      <div className="flex gap-1">
-        {[0, 1, 2, 3].map(i => (
-          <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i < score ? colors[score - 1] : 'bg-[#E5E7EB]'}`} />
-        ))}
-      </div>
-      {score > 0 && <p className="mt-1 text-xs text-[#6B7280]">Password strength: <span className="font-bold">{labels[score - 1]}</span></p>}
-    </div>
-  )
-}
-
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function CustomerDashboard() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const { user, logout } = useAuth()
-
-  const [tab, setTab] = useState('overview')
-  const [toast, setToast] = useState({ message: '', type: 'success' })
-
-  const navigate = useNavigate()
-  const [tab, setTab] = useState('overview')
-  const [loading, setLoading] = useState(true)
-  const [properties, setProperties] = useState([])
-  const [favorites, setFavorites] = useState([])
-  const [enquiries, setEnquiries] = useState([])
-  const [query, setQuery] = useState('')
-  const [city, setCity] = useState('')
-  const [propertyType, setPropertyType] = useState('')
-  const [toast, setToast] = useState('')
-  const [savingFavorite, setSavingFavorite] = useState('')
+  const [tab, setTab] = useState('properties');
+  const [toast, setToast] = useState({ message: '', type: 'success' });
+  const [loading, setLoading] = useState(true);
+  const [properties, setProperties] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [enquiries, setEnquiries] = useState([]);
+  const [query, setQuery] = useState('');
+  const [city, setCity] = useState('');
+  const [propertyType, setPropertyType] = useState('');
+  const [savingFavorite, setSavingFavorite] = useState('');
 
   useEffect(() => {
-    let active = true
-
+    let active = true;
     const load = async () => {
-      if (!user?.id) return
-      setLoading(true)
+      if (!user?.id) return;
+      setLoading(true);
       try {
         const [allProperties, favs, userEnquiries] = await Promise.all([
           fetchProperties({ status: '' }),
           fetchFavorites(user.id),
           fetchCustomerEnquiries(user.id),
-        ])
-        if (!active) return
-        setProperties(allProperties)
+        ]);
 
-        console.log("All Properties:", allProperties)
-console.log("Properties Count:", allProperties?.length)
-        setFavorites(favs)
-        setEnquiries(userEnquiries)
+        if (!active) return;
+
+        setProperties(allProperties);
+        setFavorites(favs);
+        setEnquiries(userEnquiries);
       } catch (error) {
-        if (active) setToast(error.message)
+        if (active) setToast({ message: error.message, type: 'error' });
       } finally {
-        if (active) setLoading(false)
+        if (active) setLoading(false);
       }
-    }
+    };
 
-    load()
+    load();
     return () => {
-      active = false
-    }
-  }, [user?.id])
+      active = false;
+    };
+  }, [user?.id]);
 
-  const favoriteIds = useMemo(() => new Set(favorites.map((item) => item.property_id)), [favorites])
-  const cities = useMemo(() => [...new Set(properties.map((property) => property.city).filter(Boolean))], [properties])
-  const types = useMemo(() => [...new Set(properties.map((property) => property.property_type).filter(Boolean))], [properties])
+  const favoriteIds = useMemo(() => new Set(favorites.map((item) => item.property_id)), [favorites]);
+  const cities = useMemo(() => [...new Set(properties.map((p) => p.city).filter(Boolean))], [properties]);
+  const types = useMemo(() => [...new Set(properties.map((p) => p.property_type).filter(Boolean))], [properties]);
 
   const visibleProperties = useMemo(() => {
     return properties.filter((property) => {
-      const term = query.trim().toLowerCase()
-      const matchesQuery = !term || [property.title, property.location, property.city, property.description]
-        .join(' ')
-        .toLowerCase()
-        .includes(term)
-      const matchesCity = !city || property.city === city
-      const matchesType = !propertyType || property.property_type === propertyType
-      return matchesQuery && matchesCity && matchesType
-    })
-  }, [properties, query, city, propertyType])
+      const term = query.trim().toLowerCase();
+      const matchesQuery = !term || 
+        [property.title, property.location, property.city, property.description]
+          .join(' ')
+          .toLowerCase()
+          .includes(term);
+      const matchesCity = !city || property.city === city;
+      const matchesType = !propertyType || property.property_type === propertyType;
+      return matchesQuery && matchesCity && matchesType;
+    });
+  }, [properties, query, city, propertyType]);
 
   const favoriteProperties = useMemo(
-    () => favorites.map((favorite) => favorite.property).filter(Boolean),
-    [favorites],
-  )
+    () => favorites.map((fav) => fav.property).filter(Boolean),
+    [favorites]
+  );
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/')
-  }
+    await logout();
+    navigate('/');
+  };
 
   const togglePropertyFavorite = async (propertyId) => {
-    if (!user?.id) return
-    setSavingFavorite(propertyId)
+    if (!user?.id) return;
+    setSavingFavorite(propertyId);
     try {
-      await toggleFavorite(user.id, propertyId)
-      const freshFavorites = await fetchFavorites(user.id)
-      setFavorites(freshFavorites)
-      setToast(favoriteIds.has(propertyId) ? 'Removed from favorites.' : 'Saved to favorites.')
+      await toggleFavorite(user.id, propertyId);
+      const freshFavorites = await fetchFavorites(user.id);
+      setFavorites(freshFavorites);
+      setToast({
+        message: favoriteIds.has(propertyId) ? 'Removed from favorites.' : 'Saved to favorites.',
+        type: 'success',
+      });
     } catch (error) {
-      setToast(error.message)
+      setToast({ message: error.message, type: 'error' });
     } finally {
-      setSavingFavorite('')
+      setSavingFavorite('');
     }
-  }
+  };
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast({ message: '', type: 'success' }), 3500);
+  };
 
   const stats = [
     { label: 'Saved properties', value: favorites.length, icon: Heart },
     { label: 'Active enquiries', value: enquiries.length, icon: MessageSquare },
     { label: 'Listings available', value: properties.length, icon: Home },
     { label: 'Profile complete', value: user?.profile?.full_name ? 'Yes' : 'No', icon: User },
-  ]
-
-  function showToast(message, type = 'success') {
-    setToast({ message, type })
-    setTimeout(() => setToast({ message: '', type: 'success' }), 3500)
-  }
+  ];
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
@@ -631,10 +628,9 @@ console.log("Properties Count:", allProperties?.length)
         </Link>
         <nav className="flex-1 space-y-2">
           {[
-            ['overview', 'Overview', Home],
-            ['browse', 'Browse', Search],
+            ['properties', 'Browse Properties', Search],
             ['favorites', 'Favorites', Heart],
-            ['enquiries', 'Enquiries', MessageSquare],
+            ['enquiries', 'My Enquiries', MessageSquare],
             ['profile', 'Profile', User],
           ].map(([id, label, Icon]) => (
             <button
@@ -648,240 +644,169 @@ console.log("Properties Count:", allProperties?.length)
             </button>
           ))}
         </nav>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-[#6B7280] hover:bg-[#F8F8F7]"
-        >
+        <button onClick={handleLogout} className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-[#6B7280] hover:bg-[#F8F8F7]">
           <LogOut size={17} /> Logout
         </button>
       </aside>
 
       <main className="p-5 lg:ml-64 lg:p-8">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-8 flex flex-col gap-4 rounded-[28px] bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.05)] sm:p-8 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="section-eyebrow">Buyer workspace</p>
-              <h1 className="mt-2 text-4xl font-extrabold text-[#1F2937]">
-                Welcome back, {user?.profile?.full_name || 'Customer'}
-              </h1>
-              <p className="mt-2 text-[#6B7280]">{user?.email || user?.profile?.email}</p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Badge>{user?.profile?.role || 'customer'}</Badge>
-              <Badge>{user?.profile?.city || 'No city set'}</Badge>
+          <div className="mb-8 rounded-[28px] bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.05)] sm:p-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="section-eyebrow">Welcome back</p>
+                <h1 className="mt-2 text-4xl font-extrabold text-[#1F2937]">
+                  {user?.profile?.full_name ? `Hi, ${user.profile.full_name.split(' ')[0]}` : 'Your dashboard'}
+                </h1>
+                <p className="mt-2 text-[#6B7280]">Browse listings, manage favorites, and track your enquiries.</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Badge>{user?.profile?.full_name || 'Customer'}</Badge>
+                <Badge>{user?.email || user?.profile?.email}</Badge>
+              </div>
             </div>
           </div>
 
-          {toast ? <Toast text={toast} onClose={() => setToast('')} /> : null}
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="surface rounded-[28px] p-6">
+                <stat.icon size={22} className="mb-5 text-[#0F766E]" />
+                <div className="text-3xl font-extrabold text-[#1F2937]">{stat.value}</div>
+                <div className="mt-1 text-sm text-[#6B7280]">{stat.label}</div>
+              </div>
+            ))}
+          </div>
 
-          {tab === 'overview' ? (
-            <div className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {stats.map(({ label, value, icon: Icon }) => (
-                  <div key={label} className="surface rounded-[28px] p-6">
-                    <Icon size={22} className="mb-5 text-[#0F766E]" />
-                    <div className="text-3xl font-extrabold text-[#1F2937]">{value}</div>
-                    <div className="mt-1 text-sm text-[#6B7280]">{label}</div>
-                  </div>
-                ))}
+          {/* BROWSE PROPERTIES TAB */}
+          {tab === 'properties' ? (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex flex-1 items-center gap-3 rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3">
+                  <Search size={18} className="text-[#6B7280]" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search by title, location, city..."
+                    className="w-full border-none bg-transparent text-sm outline-none placeholder:text-[#9CA3AF]"
+                  />
+                </div>
+                <select
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm font-bold text-[#1F2937]"
+                >
+                  <option value="">All cities</option>
+                  {cities.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <select
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                  className="rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm font-bold text-[#1F2937]"
+                >
+                  <option value="">All types</option>
+                  {types.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
               </div>
 
-              <section className="surface rounded-[28px] p-6 sm:p-8">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-extrabold text-[#1F2937]">Recommended properties</h2>
-                    <p className="mt-1 text-sm text-[#6B7280]">Handpicked active listings from across Tamil Nadu.</p>
-                  </div>
-                  <button onClick={() => setTab('browse')} className="btn-secondary rounded-2xl px-4 py-2.5 font-bold">
-                    Browse all
-                  </button>
+              {loading ? (
+                <div className="flex items-center justify-center py-14 text-[#6B7280]">
+                  <Loader2 className="mr-2 animate-spin" size={18} /> Loading properties...
                 </div>
-                <PropertyGrid properties={visibleProperties.slice(0, 4)} favoriteIds={favoriteIds} onFavorite={togglePropertyFavorite} savingFavorite={savingFavorite} />
-              </section>
+              ) : visibleProperties.length === 0 ? (
+                <EmptyState
+                  icon={Building2}
+                  title="No properties found"
+                  description="Try adjusting your search or filters."
+                />
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {visibleProperties.map((property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      isFavorite={favoriteIds.has(property.id)}
+                      onToggleFavorite={togglePropertyFavorite}
+                      saving={savingFavorite === property.id}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ) : null}
 
-          {tab === 'browse' ? (
-            <section className="surface rounded-[28px] p-6 sm:p-8">
-              <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <h2 className="text-2xl font-extrabold text-[#1F2937]">Browse properties</h2>
-                  <p className="mt-1 text-sm text-[#6B7280]">Search, filter, and save homes you want to revisit.</p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Field icon={Search}>
-                    <input className="input-field" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search properties" />
-                  </Field>
-                  <Field icon={Filter}>
-                    <select className="input-field" value={city} onChange={(event) => setCity(event.target.value)}>
-                      <option value="">All cities</option>
-                      {cities.map((item) => <option key={item} value={item}>{item}</option>)}
-                    </select>
-                  </Field>
-                  <Field icon={Building2}>
-                    <select className="input-field" value={propertyType} onChange={(event) => setPropertyType(event.target.value)}>
-                      <option value="">All types</option>
-                      {types.map((item) => <option key={item} value={item}>{item}</option>)}
-                    </select>
-                  </Field>
-                </div>
-              </div>
-              {loading ? (
-                <div className="flex items-center justify-center py-20 text-[#6B7280]">
-                  <Loader2 className="mr-2 animate-spin" size={18} /> Loading properties...
-                </div>
-              ) : visibleProperties.length ? (
-                <PropertyGrid properties={visibleProperties} favoriteIds={favoriteIds} onFavorite={togglePropertyFavorite} savingFavorite={savingFavorite} />
-              ) : (
-                <EmptyState title="No matching properties" description="Adjust your search or filters to see more active listings." />
-              )}
-            </section>
-          ) : null}
-
+          {/* FAVORITES TAB */}
           {tab === 'favorites' ? (
-            <section className="surface rounded-[28px] p-6 sm:p-8">
-              <h2 className="text-2xl font-extrabold text-[#1F2937]">Saved properties</h2>
-              <p className="mt-1 text-sm text-[#6B7280]">Homes and apartments you have bookmarked.</p>
-              <div className="mt-6">
-                {loading ? (
-                  <div className="flex items-center justify-center py-20 text-[#6B7280]">
-                    <Loader2 className="mr-2 animate-spin" size={18} /> Loading favorites...
-                  </div>
-                ) : favoriteProperties.length ? (
-                  <PropertyGrid properties={favoriteProperties} favoriteIds={favoriteIds} onFavorite={togglePropertyFavorite} savingFavorite={savingFavorite} />
-                ) : (
-                  <EmptyState title="No favorites yet" description="Tap the heart icon on a property to save it here." />
-                )}
-              </div>
-            </section>
+            <div className="space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-14 text-[#6B7280]">
+                  <Loader2 className="mr-2 animate-spin" size={18} /> Loading favorites...
+                </div>
+              ) : favoriteProperties.length === 0 ? (
+                <EmptyState
+                  icon={Heart}
+                  title="No saved properties yet"
+                  description="Tap the heart icon on any listing to save it here."
+                />
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {favoriteProperties.map((property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      isFavorite={true}
+                      onToggleFavorite={togglePropertyFavorite}
+                      saving={savingFavorite === property.id}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           ) : null}
 
+          {/* ENQUIRIES TAB */}
           {tab === 'enquiries' ? (
-            <section className="surface rounded-[28px] p-6 sm:p-8">
-              <h2 className="text-2xl font-extrabold text-[#1F2937]">Your enquiries</h2>
-              <p className="mt-1 text-sm text-[#6B7280]">Track conversations with brokers and property owners.</p>
-              <div className="mt-6 space-y-3">
-                {loading ? (
-                  <div className="flex items-center justify-center py-20 text-[#6B7280]">
-                    <Loader2 className="mr-2 animate-spin" size={18} /> Loading enquiries...
-                  </div>
-                ) : enquiries.length ? (
-                  enquiries.map((item) => (
-                    <div key={item.id} className="rounded-3xl border border-[#E5E7EB] bg-white p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <div className="text-base font-extrabold text-[#1F2937]">{item.property?.title || 'Property enquiry'}</div>
-                          <div className="mt-1 text-sm text-[#6B7280]">{item.property?.location || item.property?.city || ''}</div>
+            <div className="space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-14 text-[#6B7280]">
+                  <Loader2 className="mr-2 animate-spin" size={18} /> Loading enquiries...
+                </div>
+              ) : enquiries.length === 0 ? (
+                <EmptyState
+                  icon={MessageSquare}
+                  title="No enquiries yet"
+                  description="Reach out to a broker about a property to see your enquiries here."
+                />
+              ) : (
+                <div className="space-y-3">
+                  {enquiries.map((enquiry) => (
+                    <div
+                      key={enquiry.id}
+                      className="flex flex-col gap-2 rounded-[24px] border border-[#E5E7EB] bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <div className="font-extrabold text-[#1F2937]">
+                          {enquiry.property?.title || 'Property enquiry'}
                         </div>
-                        <Badge>{item.status}</Badge>
+                        <div className="mt-1 text-sm text-[#6B7280]">{enquiry.message}</div>
                       </div>
-                      <p className="mt-4 text-sm leading-6 text-[#6B7280]">{item.message}</p>
+                      <Badge>{enquiry.status || 'pending'}</Badge>
                     </div>
-                  ))
-                ) : (
-                  <EmptyState title="No enquiries yet" description="When you contact a broker, the conversation will appear here." />
-                )}
-              </div>
-            </section>
+                  ))}
+                </div>
+              )}
+            </div>
           ) : null}
 
-          {tab === 'profile' ? (
-            <ProfileEditor title="Profile management" subtitle="Update your account information and avatar instantly." />
-          ) : null}
-
-              <PropertyStrip title="Recommendations" items={recommendations} />
-            </>
-          )}
-
-          {tab === 'saved' && <PropertyStrip title="Saved Properties and Wishlist" items={saved} />}
-          {tab === 'activity' && <PropertyStrip title="Recently Viewed" items={properties.slice(2, 6)} />}
-          {tab === 'profile' && <ProfileTab showToast={showToast} />}
-
+          {/* PROFILE TAB */}
+          {tab === 'profile' ? <ProfileTab showToast={showToast} user={user} /> : null}
         </div>
       </main>
 
       <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: '', type: 'success' })} />
     </div>
-  )
-}
-
-function PropertyGrid({ properties, favoriteIds, onFavorite, savingFavorite }) {
-  return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
-      {properties.map((property) => (
-        <article key={property.id} className="overflow-hidden rounded-[24px] border border-[#E5E7EB] bg-white shadow-sm">
-          <div className="relative h-52 bg-[#F8F8F7]">
-            <img
-              src={property.images?.[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?q=80&w=1200&auto=format&fit=crop'}
-              alt={property.title}
-              className="h-full w-full object-cover"
-            />
-            <button
-              onClick={() => onFavorite(property.id)}
-              className="absolute right-4 top-4 rounded-full bg-white/95 p-2.5 text-[#0F766E] shadow"
-            >
-              <Heart size={16} className={favoriteIds.has(property.id) ? 'fill-current text-[#0F766E]' : ''} />
-            </button>
-          </div>
-          <div className="space-y-3 p-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-[#F0FAF8] px-3 py-1 text-xs font-bold text-[#0F766E]">{property.property_type}</span>
-              <span className="rounded-full bg-[#F8F8F7] px-3 py-1 text-xs font-bold text-[#6B7280]">{property.city}</span>
-            </div>
-            <Link to={`/property/${property.id}`} className="block text-xl font-extrabold text-[#1F2937] hover:text-[#0F766E]">
-              {property.title}
-            </Link>
-            <div className="flex items-center gap-1 text-sm text-[#6B7280]">
-              <MapPin size={14} className="text-[#0F766E]" />
-              {property.location}
-            </div>
-            <div className="flex items-center justify-between gap-3 pt-2">
-              <div className="text-xl font-extrabold text-[#134E4A]">{formatPrice(property.price)}</div>
-              <button
-                onClick={() => onFavorite(property.id)}
-                disabled={savingFavorite === property.id}
-                className="rounded-2xl bg-[#F0FAF8] px-4 py-2 text-sm font-bold text-[#0F766E] disabled:opacity-60"
-              >
-                {savingFavorite === property.id ? 'Saving...' : favoriteIds.has(property.id) ? 'Saved' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </article>
-      ))}
-    </div>
-  )
-}
-
-function EmptyState({ title, description }) {
-  return (
-    <div className="rounded-[24px] border border-dashed border-[#E5E7EB] bg-white px-6 py-14 text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F0FAF8] text-[#0F766E]">
-        <Sparkles size={20} />
-      </div>
-      <div className="mt-4 text-lg font-extrabold text-[#1F2937]">{title}</div>
-      <p className="mt-2 text-sm text-[#6B7280]">{description}</p>
-    </div>
-  )
-}
-
-function Field({ icon: Icon, children }) {
-  return (
-    <div className="relative">
-      <Icon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#0F766E]" />
-      <div className="pl-11">{children}</div>
-    </div>
-  )
-}
-
-function Badge({ children }) {
-  return <span className="rounded-full bg-[#F0FAF8] px-3 py-1 text-xs font-bold text-[#0F766E]">{children}</span>
-}
-
-function Toast({ text, onClose }) {
-  return (
-    <div className="fixed bottom-6 right-6 z-50 rounded-2xl bg-[#134E4A] px-5 py-4 text-sm font-bold text-white shadow-xl">
-      {text}
-      <button onClick={onClose} className="ml-4 text-white/70 hover:text-white">x</button>
-    </div>
-  )
+  );
 }

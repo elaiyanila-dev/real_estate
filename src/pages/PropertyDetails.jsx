@@ -180,15 +180,17 @@ export default function PropertyDetail() {
               </div>
               <h1 className="text-3xl font-extrabold text-[#1F2937]">{property.title}</h1>
               <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-[#6B7280]">
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin size={16} className="text-[#0F766E]" />
-                  {property.location}, {property.city}
-                </span>
-                <span>{property.bedrooms} beds</span>
-                <span>{property.bathrooms} baths</span>
-                <span>{property.area} sq ft</span>
-              </div>
-              <div className="mt-5 text-3xl font-extrabold text-[#134E4A]">{formatPrice(property.price)}</div>
+               <span className="inline-flex items-center gap-1.5">
+  <MapPin size={16} className="text-[#0F766E]" />
+  {property.location}, {property.city}
+</span>
+<span>{property.bhk} BHK</span>
+<span>{property.bedrooms} beds</span>
+<span>{property.bathrooms} baths</span>
+<span>{property.area} sq ft</span>
+<span>{property.furnishing}</span>
+</div>
+<div className="mt-5 text-3xl font-extrabold text-[#134E4A]">{property.priceLabel}</div>
               <p className="mt-5 whitespace-pre-line text-sm leading-7 text-[#6B7280]">{property.description}</p>
             </div>
           </section>

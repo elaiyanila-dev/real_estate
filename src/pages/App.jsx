@@ -22,15 +22,6 @@ import Unauthorized from './Unauthorized.jsx'
 import PropertyDetail from './PropertyDetails.jsx'
 import AuthCallback from './AuthCallback.jsx'
 
-import CustomerRegister from './CustomerRegister.jsx'
-import BrokerRegister from './BrokerRegister.jsx'
-import ForgotPassword from './ForgotPassword.jsx'
-import ResetPassword from './ResetPassword.jsx'
-import Unauthorized from './Unauthorized.jsx'
-import PropertyDetail from './PropertyDetail.jsx'
-import { AuthProvider } from '../contexts/AuthContext.jsx'
-import ProtectedRoute from '../components/ProtectedRoute.jsx'
-
 
 export default function App() {
   return (
