@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Building2, ChevronDown, Home, Menu, Search, ShieldCheck, UserRound, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { LogOut, Settings } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext.jsx'
 import { tamilNaduCities } from '../data/properties.js'
@@ -65,6 +65,7 @@ const AlayaaLogo = () => (
 export default function Navbar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [open, setOpen] = useState(false)
   const [citiesOpen, setCitiesOpen] = useState(false)
 
@@ -127,7 +128,14 @@ export default function Navbar() {
   <button
     onClick={() => {
       if (item.scrollTo) {
-        document.getElementById(item.scrollTo)?.scrollIntoView({ behavior: 'smooth' })
+        if (location.pathname !== '/') {
+          navigate('/')
+          setTimeout(() => {
+            document.getElementById(item.scrollTo)?.scrollIntoView({ behavior: 'smooth' })
+          }, 300)
+        } else {
+          document.getElementById(item.scrollTo)?.scrollIntoView({ behavior: 'smooth' })
+        }
         closeAll()
       } else if (isMega) {
         handleMegaToggle(item.label)
