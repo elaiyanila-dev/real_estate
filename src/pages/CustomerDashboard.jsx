@@ -36,6 +36,10 @@ import {
   toggleFavorite,
 } from '../services/api.jsx';
 
+function formatPrice(value) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0));
+}
+
 // ─── Toast ───────────────────────────────────────────────────────────────────
 function Toast({ message, type, onClose }) {
   if (!message) return null;
@@ -47,6 +51,77 @@ function Toast({ message, type, onClose }) {
       <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100">
         <X size={14} />
       </button>
+    </div>
+  );
+}
+
+// ─── Shared bits ─────────────────────────────────────────────────────────────
+function Badge({ children }) {
+  return <span className="rounded-full bg-[#F8F8F7] px-3 py-1 text-xs font-bold text-[#6B7280]">{children}</span>;
+}
+
+function EmptyState({ icon: Icon = Home, title, description }) {
+  return (
+    <div className="rounded-[24px] border border-dashed border-[#E5E7EB] bg-white px-6 py-14 text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F0FAF8] text-[#0F766E]">
+        <Icon size={20} />
+      </div>
+      <div className="mt-4 text-lg font-extrabold text-[#1F2937]">{title}</div>
+      <p className="mt-2 text-sm text-[#6B7280]">{description}</p>
+    </div>
+  );
+}
+
+function Field({ label, error, children }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-bold text-[#1F2937]">{label}</label>
+      {children}
+      {error ? <p className="mt-1 text-xs font-bold text-red-500">{error}</p> : null}
+    </div>
+  );
+}
+
+const inputClass =
+  'w-full rounded-2xl border border-[#E5E7EB] px-4 py-2.5 text-sm text-[#1F2937] outline-none focus:border-[#0F766E]';
+
+// ─── Property Card ────────────────────────────────────────────────────────────
+function PropertyCard({ property, isFavorite, onToggleFavorite, saving }) {
+  return (
+    <div className="group overflow-hidden rounded-[24px] border border-[#E5E7EB] bg-white transition hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+      <div className="relative h-44 w-full overflow-hidden bg-[#F0FAF8]">
+        {property.image_url ? (
+          <img src={property.image_url} alt={property.title} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-[#0F766E]">
+            <Building2 size={36} />
+          </div>
+        )}
+        <button
+          disabled={saving}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleFavorite(property.id);
+          }}
+          className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full shadow-md transition disabled:opacity-60 ${
+            isFavorite ? 'bg-rose-500 text-white' : 'bg-white text-[#6B7280] hover:text-rose-500'
+          }`}
+        >
+          <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
+        </button>
+      </div>
+      <Link to={`/property/${property.id}`} className="block p-5">
+        <div className="font-extrabold text-[#1F2937]">{property.title}</div>
+        <div className="mt-1 flex items-center gap-1 text-sm text-[#6B7280]">
+          <MapPin size={13} />
+          {property.location}, {property.city}
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+          <div className="text-sm font-bold text-[#0F766E]">{formatPrice(property.price)}</div>
+          <Badge>{property.property_type}</Badge>
+        </div>
+      </Link>
     </div>
   );
 }
@@ -79,18 +154,18 @@ function AvatarUpload({ initials, avatarUrl, onChange }) {
 }
 
 // ─── Profile Tab ──────────────────────────────────────────────────────────────
-function ProfileTab({ showToast }) {
+function ProfileTab({ showToast, user }) {
   const [activeSection, setActiveSection] = useState('personal');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Personal Info
   const [personal, setPersonal] = useState({
-    fullName: 'Rahul Kumar',
-    email: 'rahul@alayaa.in',
-    phone: '+91 98765 43210',
-    city: 'Chennai',
-    bio: '',
+    fullName: user?.profile?.full_name || 'Rahul Kumar',
+    email: user?.email || user?.profile?.email || 'rahul@alayaa.in',
+    phone: user?.profile?.phone || '+91 98765 43210',
+    city: user?.profile?.city || 'Chennai',
+    bio: user?.profile?.bio || '',
   });
   const [personalErrors, setPersonalErrors] = useState({});
 
@@ -224,8 +299,6 @@ function ProfileTab({ showToast }) {
         {/* Personal Info */}
         {activeSection === 'personal' && (
           <div className="surface rounded-3xl p-8 animate-fade-in-up">
-            {/* ... (rest of your Personal Info section remains the same) */}
-            {/* I kept all your content unchanged */}
             <div className="mb-6">
               <p className="section-eyebrow">Account</p>
               <h2 className="mt-1 text-2xl font-extrabold text-[#1F2937]">Personal Information</h2>
@@ -250,9 +323,46 @@ function ProfileTab({ showToast }) {
 
             <form onSubmit={handlePersonalSave} noValidate>
               <div className="grid gap-5 sm:grid-cols-2">
-                {/* Your existing Field components... */}
-                {/* (Keeping all your form fields exactly as you wrote them) */}
-                {/* ... */}
+                <Field label="Full name" error={personalErrors.fullName}>
+                  <input
+                    className={inputClass}
+                    value={personal.fullName}
+                    onChange={(e) => setPersonal({ ...personal, fullName: e.target.value })}
+                  />
+                </Field>
+                <Field label="Email" error={personalErrors.email}>
+                  <input
+                    type="email"
+                    className={inputClass}
+                    value={personal.email}
+                    onChange={(e) => setPersonal({ ...personal, email: e.target.value })}
+                  />
+                </Field>
+                <Field label="Phone" error={personalErrors.phone}>
+                  <input
+                    className={inputClass}
+                    value={personal.phone}
+                    onChange={(e) => setPersonal({ ...personal, phone: e.target.value })}
+                  />
+                </Field>
+                <Field label="City">
+                  <input
+                    className={inputClass}
+                    value={personal.city}
+                    onChange={(e) => setPersonal({ ...personal, city: e.target.value })}
+                  />
+                </Field>
+                <div className="sm:col-span-2">
+                  <Field label="Bio">
+                    <textarea
+                      rows={3}
+                      className={inputClass}
+                      placeholder="Tell brokers a little about what you're looking for..."
+                      value={personal.bio}
+                      onChange={(e) => setPersonal({ ...personal, bio: e.target.value })}
+                    />
+                  </Field>
+                </div>
               </div>
               <div className="mt-6 flex items-center gap-3">
                 <button
@@ -270,9 +380,133 @@ function ProfileTab({ showToast }) {
           </div>
         )}
 
-        {/* Security, Notifications, Danger Zone sections remain unchanged */}
-        {/* (I preserved all your logic and UI) */}
-        {/* ... Security, Notifications, Danger Zone code is kept as-is ... */}
+        {/* Password & Security */}
+        {activeSection === 'security' && (
+          <div className="surface rounded-3xl p-8 animate-fade-in-up">
+            <div className="mb-6">
+              <p className="section-eyebrow">Security</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-[#1F2937]">Password & Security</h2>
+              <p className="mt-1 text-sm text-[#6B7280]">Keep your account secure with a strong password.</p>
+            </div>
+
+            <form onSubmit={handlePasswordChange} noValidate className="max-w-md space-y-5">
+              <Field label="Current password" error={pwErrors.current}>
+                <input
+                  type="password"
+                  className={inputClass}
+                  value={passwords.current}
+                  onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                />
+              </Field>
+              <Field label="New password" error={pwErrors.next}>
+                <input
+                  type="password"
+                  className={inputClass}
+                  value={passwords.next}
+                  onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
+                />
+              </Field>
+              <Field label="Confirm new password" error={pwErrors.confirm}>
+                <input
+                  type="password"
+                  className={inputClass}
+                  value={passwords.confirm}
+                  onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                />
+              </Field>
+              <button
+                type="submit"
+                disabled={saving}
+                className="btn-primary rounded-2xl px-7 py-3 font-bold text-sm disabled:opacity-60"
+              >
+                {saving ? 'Updating…' : 'Update password'}
+              </button>
+            </form>
+
+            <div className="mt-8 flex items-center gap-3 rounded-2xl bg-[#F0FAF8] p-5 text-sm text-[#134E4A]">
+              <Shield size={18} />
+              We recommend using a unique password you don't use anywhere else.
+            </div>
+          </div>
+        )}
+
+        {/* Notifications */}
+        {activeSection === 'notifications' && (
+          <div className="surface rounded-3xl p-8 animate-fade-in-up">
+            <div className="mb-6">
+              <p className="section-eyebrow">Preferences</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-[#1F2937]">Notifications</h2>
+              <p className="mt-1 text-sm text-[#6B7280]">Choose what you'd like to hear from us about.</p>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                ['newListings', 'New listings matching your search', Home],
+                ['priceDrops', 'Price drops on saved properties', Sparkles],
+                ['inquiryUpdates', 'Updates on your enquiries', MessageSquare],
+                ['brokerMessages', 'Messages from brokers', Mail],
+                ['weeklyDigest', 'Weekly digest email', Bell],
+                ['smsAlerts', 'SMS alerts', Phone],
+              ].map(([key, label, Icon]) => (
+                <label
+                  key={key}
+                  className="flex items-center justify-between rounded-2xl border border-[#E5E7EB] px-5 py-4 cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon size={16} className="text-[#0F766E]" />
+                    <span className="text-sm font-bold text-[#1F2937]">{label}</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notifications[key]}
+                    onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })}
+                    className="h-5 w-5 accent-[#0F766E]"
+                  />
+                </label>
+              ))}
+            </div>
+
+            <button
+              onClick={handleNotificationsSave}
+              disabled={saving}
+              className="btn-primary mt-6 rounded-2xl px-7 py-3 font-bold text-sm disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save preferences'}
+            </button>
+          </div>
+        )}
+
+        {/* Danger Zone */}
+        {activeSection === 'danger' && (
+          <div className="surface rounded-3xl p-8 animate-fade-in-up">
+            <div className="mb-6">
+              <p className="section-eyebrow text-red-500">Danger zone</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-[#1F2937]">Delete account</h2>
+              <p className="mt-1 text-sm text-[#6B7280]">
+                This will permanently delete your account, saved properties, and enquiry history. This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+              <div className="flex items-center gap-2 text-sm font-bold text-red-600">
+                <AlertCircle size={16} /> Type DELETE to confirm
+              </div>
+              <input
+                className="mt-3 w-full rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm outline-none"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                placeholder="DELETE"
+              />
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirm !== 'DELETE'}
+                className="mt-4 flex items-center gap-2 rounded-2xl bg-red-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-40"
+              >
+                <Trash2 size={15} /> Delete my account
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -283,7 +517,7 @@ export default function CustomerDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState('properties');
   const [toast, setToast] = useState({ message: '', type: 'success' });
   const [loading, setLoading] = useState(true);
   const [properties, setProperties] = useState([]);
@@ -375,7 +609,6 @@ export default function CustomerDashboard() {
     setTimeout(() => setToast({ message: '', type: 'success' }), 3500);
   };
 
-  // Stats, tabs, etc. kept as original
   const stats = [
     { label: 'Saved properties', value: favorites.length, icon: Heart },
     { label: 'Active enquiries', value: enquiries.length, icon: MessageSquare },
@@ -385,8 +618,193 @@ export default function CustomerDashboard() {
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
-      {/* Sidebar & Main Content - kept as you had */}
-      {/* ... (all your JSX structure preserved) ... */}
+      <aside className="fixed left-0 top-0 hidden h-full w-64 border-r border-[#E5E7EB] bg-white p-5 lg:flex lg:flex-col">
+        <Link to="/" className="mb-10 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0F766E] font-extrabold text-white">A</div>
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6B7280]">Customer</div>
+            <div className="text-xl font-extrabold text-[#134E4A]">ALAYAA</div>
+          </div>
+        </Link>
+        <nav className="flex-1 space-y-2">
+          {[
+            ['properties', 'Browse Properties', Search],
+            ['favorites', 'Favorites', Heart],
+            ['enquiries', 'My Enquiries', MessageSquare],
+            ['profile', 'Profile', User],
+          ].map(([id, label, Icon]) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition ${
+                tab === id ? 'bg-[#0F766E] text-white' : 'text-[#6B7280] hover:bg-[#F0FAF8] hover:text-[#0F766E]'
+              }`}
+            >
+              <Icon size={17} /> {label}
+            </button>
+          ))}
+        </nav>
+        <button onClick={handleLogout} className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold text-[#6B7280] hover:bg-[#F8F8F7]">
+          <LogOut size={17} /> Logout
+        </button>
+      </aside>
+
+      <main className="p-5 lg:ml-64 lg:p-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-8 rounded-[28px] bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.05)] sm:p-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="section-eyebrow">Welcome back</p>
+                <h1 className="mt-2 text-4xl font-extrabold text-[#1F2937]">
+                  {user?.profile?.full_name ? `Hi, ${user.profile.full_name.split(' ')[0]}` : 'Your dashboard'}
+                </h1>
+                <p className="mt-2 text-[#6B7280]">Browse listings, manage favorites, and track your enquiries.</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Badge>{user?.profile?.full_name || 'Customer'}</Badge>
+                <Badge>{user?.email || user?.profile?.email}</Badge>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="surface rounded-[28px] p-6">
+                <stat.icon size={22} className="mb-5 text-[#0F766E]" />
+                <div className="text-3xl font-extrabold text-[#1F2937]">{stat.value}</div>
+                <div className="mt-1 text-sm text-[#6B7280]">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* BROWSE PROPERTIES TAB */}
+          {tab === 'properties' ? (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex flex-1 items-center gap-3 rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3">
+                  <Search size={18} className="text-[#6B7280]" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search by title, location, city..."
+                    className="w-full border-none bg-transparent text-sm outline-none placeholder:text-[#9CA3AF]"
+                  />
+                </div>
+                <select
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm font-bold text-[#1F2937]"
+                >
+                  <option value="">All cities</option>
+                  {cities.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <select
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                  className="rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm font-bold text-[#1F2937]"
+                >
+                  <option value="">All types</option>
+                  {types.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              {loading ? (
+                <div className="flex items-center justify-center py-14 text-[#6B7280]">
+                  <Loader2 className="mr-2 animate-spin" size={18} /> Loading properties...
+                </div>
+              ) : visibleProperties.length === 0 ? (
+                <EmptyState
+                  icon={Building2}
+                  title="No properties found"
+                  description="Try adjusting your search or filters."
+                />
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {visibleProperties.map((property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      isFavorite={favoriteIds.has(property.id)}
+                      onToggleFavorite={togglePropertyFavorite}
+                      saving={savingFavorite === property.id}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          {/* FAVORITES TAB */}
+          {tab === 'favorites' ? (
+            <div className="space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-14 text-[#6B7280]">
+                  <Loader2 className="mr-2 animate-spin" size={18} /> Loading favorites...
+                </div>
+              ) : favoriteProperties.length === 0 ? (
+                <EmptyState
+                  icon={Heart}
+                  title="No saved properties yet"
+                  description="Tap the heart icon on any listing to save it here."
+                />
+              ) : (
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                  {favoriteProperties.map((property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      isFavorite={true}
+                      onToggleFavorite={togglePropertyFavorite}
+                      saving={savingFavorite === property.id}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          {/* ENQUIRIES TAB */}
+          {tab === 'enquiries' ? (
+            <div className="space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-14 text-[#6B7280]">
+                  <Loader2 className="mr-2 animate-spin" size={18} /> Loading enquiries...
+                </div>
+              ) : enquiries.length === 0 ? (
+                <EmptyState
+                  icon={MessageSquare}
+                  title="No enquiries yet"
+                  description="Reach out to a broker about a property to see your enquiries here."
+                />
+              ) : (
+                <div className="space-y-3">
+                  {enquiries.map((enquiry) => (
+                    <div
+                      key={enquiry.id}
+                      className="flex flex-col gap-2 rounded-[24px] border border-[#E5E7EB] bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <div className="font-extrabold text-[#1F2937]">
+                          {enquiry.property?.title || 'Property enquiry'}
+                        </div>
+                        <div className="mt-1 text-sm text-[#6B7280]">{enquiry.message}</div>
+                      </div>
+                      <Badge>{enquiry.status || 'pending'}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          {/* PROFILE TAB */}
+          {tab === 'profile' ? <ProfileTab showToast={showToast} user={user} /> : null}
+        </div>
+      </main>
 
       <Toast message={toast.message} type={toast.type} onClose={() => setToast({ message: '', type: 'success' })} />
     </div>

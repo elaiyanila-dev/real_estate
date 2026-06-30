@@ -39,7 +39,7 @@ function formatIndianPrice(value) {
 }
 function normalizeProperty(row) {
   if (!row) return null
-  console.log('RAW ROW IMAGES:', row.images, 'TYPE:', typeof row.images, 'IS ARRAY:', Array.isArray(row.images), 'TITLE:', row.title)
+  
   return {
     id: row.id,
     broker_id: row.broker_id || null,
@@ -210,8 +210,6 @@ function authRedirectPath(nextPath) {
 export async function login({ email, password, role }) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-  console.log("Login data:", data);
-console.log("Login error:", error);
 
   if (error) throw error
 
