@@ -37,7 +37,16 @@ import {
 } from '../services/api.jsx';
 
 function formatPrice(value) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0));
+  // If it's already a formatted string (like "1.20 Cr"), just show it as-is
+  if (typeof value === 'string' && isNaN(Number(value))) {
+    return value.startsWith('₹') ? value : `₹${value}`;
+  }
+
+  const num = Number(value || 0);
+  if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
+  if (num >= 100000) return `₹${(num / 100000).toFixed(2)} L`;
+  if (num > 0) return `₹${num.toLocaleString('en-IN')}`;
+  return 'Price on request';
 }
 
 // ─── Toast ───────────────────────────────────────────────────────────────────
@@ -118,7 +127,7 @@ function PropertyCard({ property, isFavorite, onToggleFavorite, saving }) {
           {property.locality}, {property.city}
         </div>
         <div className="mt-3 flex items-center justify-between">
-          <div className="text-sm font-bold text-[#0F766E]">{property.price}</div>
+          <div className="text-sm font-bold text-[#0F766E]">{formatPrice(property.price)}</div>
           <Badge>{property.property_type}</Badge>
         </div>
       </Link>
