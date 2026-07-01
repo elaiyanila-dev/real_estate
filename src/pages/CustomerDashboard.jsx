@@ -37,7 +37,16 @@ import {
 } from '../services/api.jsx';
 
 function formatPrice(value) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0));
+  // If it's already a formatted string (like "1.20 Cr"), just show it as-is
+  if (typeof value === 'string' && isNaN(Number(value))) {
+    return value.startsWith('₹') ? value : `₹${value}`;
+  }
+
+  const num = Number(value || 0);
+  if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
+  if (num >= 100000) return `₹${(num / 100000).toFixed(2)} L`;
+  if (num > 0) return `₹${num.toLocaleString('en-IN')}`;
+  return 'Price on request';
 }
 
 // ─── Toast ───────────────────────────────────────────────────────────────────
@@ -90,9 +99,9 @@ function PropertyCard({ property, isFavorite, onToggleFavorite, saving }) {
   return (
     <div className="group overflow-hidden rounded-[24px] border border-[#E5E7EB] bg-white transition hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
       <div className="relative h-44 w-full overflow-hidden bg-[#F0FAF8]">
-        {property.image_url ? (
-          <img src={property.image_url} alt={property.title} className="h-full w-full object-cover" />
-        ) : (
+        {property.image ? (
+  <img src={property.image} alt={property.title} className="h-full w-full object-cover" />
+) : (
           <div className="flex h-full w-full items-center justify-center text-[#0F766E]">
             <Building2 size={36} />
           </div>
@@ -115,7 +124,7 @@ function PropertyCard({ property, isFavorite, onToggleFavorite, saving }) {
         <div className="font-extrabold text-[#1F2937]">{property.title}</div>
         <div className="mt-1 flex items-center gap-1 text-sm text-[#6B7280]">
           <MapPin size={13} />
-          {property.location}, {property.city}
+          {property.locality}, {property.city}
         </div>
         <div className="mt-3 flex items-center justify-between">
           <div className="text-sm font-bold text-[#0F766E]">{formatPrice(property.price)}</div>

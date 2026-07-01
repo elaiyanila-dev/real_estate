@@ -29,6 +29,7 @@ function normalizeProfile(row, brokerApproval = null) {
     brokerApproval,
   }
 }
+
 function formatIndianPrice(value) {
   const num = Number(value || 0)
   if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`
@@ -37,9 +38,10 @@ function formatIndianPrice(value) {
   if (num === 0)       return 'On request'
   return `₹${num.toLocaleString('en-IN')}`
 }
+
 function normalizeProperty(row) {
   if (!row) return null
-  
+
   return {
     id: row.id,
     broker_id: row.broker_id || null,
@@ -48,8 +50,8 @@ function normalizeProperty(row) {
     city: row.city || '',
     locality: row.locality || '',
     location: row.location || '',
-    price: row.price || 'On request',
-    priceValue: Number(row.price_value || 0) / 100000, // convert raw rupees to lakhs, matching mock data's scale
+    price: formatIndianPrice(row.price_value),
+    priceValue: Number(row.price_value || 0) / 100000, // raw rupees -> lakhs, matching mock data's scale
     bhk: Number(row.bhk || row.bedrooms || 0),
     bedrooms: Number(row.bedrooms || 0),
     bathrooms: Number(row.bathrooms || 0),
@@ -70,7 +72,6 @@ function normalizeProperty(row) {
     created_at: row.created_at || null,
   }
 }
-
 
 function normalizeFavourite(row, property = null) {
   return {
@@ -109,9 +110,8 @@ async function getCurrentAuthUser() {
   return data.user || null
 }
 
-
 async function fetchBrokerApproval(brokerId) {
-  return { status: 'approved' }  
+  return { status: 'approved' }
 }
 
 async function ensureProfileForAuthUser(authUser) {
@@ -127,7 +127,6 @@ async function ensureProfileForAuthUser(authUser) {
     return data
   }
 
-  
   if (authUser.email) {
     const { data: byEmail, error: emailError } = await supabase
       .from('profiles')
@@ -210,7 +209,6 @@ function authRedirectPath(nextPath) {
 export async function login({ email, password, role }) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-
   if (error) throw error
 
   const authUser = data.user
@@ -272,9 +270,6 @@ export async function register(payload) {
       },
     },
   })
-
-  console.log('SIGNUP RESULT DATA:', data)
-  console.log('SIGNUP RESULT ERROR:', error)
 
   if (error) throw error
 
@@ -363,12 +358,8 @@ export async function uploadProfilePicture(file, userId) {
   const filePath = `${userId}/${crypto.randomUUID()}.${extension}`
 
   const { error } = await supabase.storage
-  .from(PROPERTY_BUCKET)
-  .upload(filePath, file, { upsert: true, cacheControl: '3600', contentType: file.type })
-
-console.log('UPLOAD ERROR DETAIL:', error, 'BUCKET:', PROPERTY_BUCKET, 'PATH:', filePath, 'FILE TYPE:', file.type)
-
-if (error) throw error
+    .from(PROPERTY_BUCKET)
+    .upload(filePath, file, { upsert: true, cacheControl: '3600', contentType: file.type })
 
   if (error) throw error
 
@@ -394,6 +385,7 @@ export async function uploadPropertyImages(files, brokerId) {
 
   return uploads
 }
+
 export async function fetchProperties(filters = {}) {
   const options = typeof filters === 'string' ? { query: filters } : filters
 
@@ -409,7 +401,7 @@ export async function fetchProperties(filters = {}) {
   } = options
 
   let request = supabase
-    .from('properties') // <-- your actual table name
+    .from('properties')
     .select('*')
     .order('id', { ascending: false })
 
@@ -418,8 +410,8 @@ export async function fetchProperties(filters = {}) {
   }
 
   if (city) {
-  request = request.ilike('city', city)
-}
+    request = request.ilike('city', city)
+  }
 
   if (propertyType) {
     request = request.eq('property_type', propertyType)
@@ -470,23 +462,34 @@ export async function fetchPropertyById(id) {
   return normalizeProperty(data)
 }
 
-// AFTER
 export async function fetchBrokerProperties(brokerId) {
   const { data, error } = await supabase
     .from('properties')
     .select('*')
-    .eq('broker_id', brokerId)   // ✅ directly filter
+    .eq('broker_id', brokerId)
     .order('id', { ascending: false })
 
   if (error) throw error
   return (data || []).map(normalizeProperty)
 }
 
+/**
+ * IMPORTANT: The "price" field on the broker form is entered in LAKHS
+ * (e.g. broker types 96 to mean ₹96 Lakh). We convert it to actual
+ * rupees here before saving, since price_value in the DB must always
+ * be stored in plain rupees for formatIndianPrice() to work correctly.
+ */
+function priceInputToRupees(price) {
+  const lakhs = Number(price || 0)
+  return Math.round(lakhs * 100000)
+}
+
 export async function createProperty(payload) {
   const { data: authUser, error: authErr } = await supabase.auth.getUser()
-  console.log('AUTH USER:', authUser, 'AUTH ERROR:', authErr)
+  if (authErr) throw authErr
+
   const { data: sessionData } = await supabase.auth.getSession()
-  console.log('SESSION:', sessionData)
+
   const brokerId = payload.broker_id || authUser.user?.id
   if (!brokerId) throw new Error('A logged in broker is required.')
 
@@ -494,7 +497,7 @@ export async function createProperty(payload) {
     broker_id: brokerId,
     title: payload.title,
     description: payload.description,
-   price_value: Number(payload.price || 0),  
+    price_value: priceInputToRupees(payload.price),
     location: payload.location,
     city: payload.city,
     bedrooms: Number(payload.bedrooms || 0),
@@ -515,12 +518,11 @@ export async function createProperty(payload) {
   return normalizeProperty(data)
 }
 
-// AFTER
 export async function updateProperty(id, payload) {
   const row = {
     title: payload.title,
     description: payload.description,
-    price_value: Number(payload.price || 0),  
+    price_value: priceInputToRupees(payload.price),
     location: payload.location,
     city: payload.city,
     locality: payload.locality || '',
@@ -532,7 +534,6 @@ export async function updateProperty(id, payload) {
     images: asArray(payload.images),
     updated_at: new Date().toISOString(),
   }
-  
 
   const { data, error } = await supabase
     .from('properties')
