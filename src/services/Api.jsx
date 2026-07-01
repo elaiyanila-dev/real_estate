@@ -48,7 +48,7 @@ function normalizeProperty(row) {
     city: row.city || '',
     locality: row.locality || '',
     location: row.location || '',
-    price: row.price || 'On request',
+    price: formatIndianPrice(row.price_value),
     priceValue: Number(row.price_value || 0) / 100000, // convert raw rupees to lakhs, matching mock data's scale
     bhk: Number(row.bhk || row.bedrooms || 0),
     bedrooms: Number(row.bedrooms || 0),
